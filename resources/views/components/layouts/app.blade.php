@@ -16,8 +16,8 @@
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="flex h-14 items-center justify-between">
                 <a href="{{ route('home') }}" class="flex items-center gap-2.5">
-                    <img src="{{ asset('wm.svg') }}" alt="{{ config('app.name', 'Skylight') }}" class="h-7 dark:hidden" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-                    <span class="hidden text-lg font-semibold tracking-tight dark:block">{{ config('app.name', 'Skylight') }}</span>
+                    <img src="{{ asset('wm.svg') }}" alt="{{ config('app.name', 'Skylight') }}" class="h-7 dark:hidden">
+                    <img src="{{ asset('wm-w.svg') }}" alt="{{ config('app.name', 'Skylight') }}" class="h-7 hidden dark:block">
                 </a>
 
                 <div class="flex items-center gap-4">
