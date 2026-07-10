@@ -9,12 +9,32 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 #[Fillable(['user_id', 'name', 'description', 'position'])]
 class Board extends Model
 {
     /** @use HasFactory<BoardFactory> */
     use HasFactory;
+
+    /**
+     * Auto-generate a UUID whenever a board is first created.
+     * The integer PK (id) remains for SQL joins and foreign keys.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Board $board) {
+            $board->uuid ??= (string) Str::uuid();
+        });
+    }
+
+    /**
+     * Use the UUID as the route binding key so board IDs never appear in URLs.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
 
     public function user(): BelongsTo
     {
