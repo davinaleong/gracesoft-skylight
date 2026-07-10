@@ -15,12 +15,12 @@ A running checklist tracking implementation progress per the defined build order
 - [x] Protect routes behind auth middleware
 - [x] Write feature tests for auth flows (12 tests passing)
 
-## Milestone 2 — Boards -> Columns -> Cards
+## Milestone 2 — Boards -> Columns -> Cards (DONE)
 
-- [ ] Board model, migration, factory, seeder, CRUD
-- [ ] Column model, migration, factory, seeder, CRUD
-- [ ] Card model, migration, factory, seeder, CRUD
-- [ ] Drag-and-drop reordering via SortableJS + Livewire
+- [x] Board model, migration, factory, seeder, CRUD
+- [x] Column model, migration, factory, seeder, CRUD
+- [x] Card model, migration, factory, seeder, CRUD
+- [x] Drag-and-drop reordering via SortableJS + Livewire
 
 ## Milestone 3 — Tags and Labels
 
@@ -65,3 +65,4 @@ A running checklist tracking implementation progress per the defined build order
 - [ ] Search / filter cards and boards
 - [ ] Keyboard shortcuts
 - [ ] Dark mode
+

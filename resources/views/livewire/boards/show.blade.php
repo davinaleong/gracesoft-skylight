@@ -2,102 +2,119 @@
 
 use App\Models\Board;
 use App\Models\Card;
-use App\Models\Column;
-use function Livewire\Volt\{state, computed, mount};
+use Livewire\Attributes\Computed;
+use Livewire\Volt\Component;
 
-state([
-    'board' => null,
-    'showColumnForm' => false,
-    'newColumnName' => '',
-    'addingCardToColumn' => null,
-    'newCardTitle' => '',
-    'editingCard' => null,
-    'editCardTitle' => '',
-    'editCardDescription' => '',
-]);
+new class extends Component {
+    public Board $board;
+    public bool $showColumnForm = false;
+    public string $newColumnName = '';
+    public ?int $addingCardToColumn = null;
+    public string $newCardTitle = '';
+    public ?int $editingCard = null;
+    public string $editCardTitle = '';
+    public string $editCardDescription = '';
 
-mount(function (Board $board) {
-    $this->board = $board;
-});
+    public function mount(Board $board): void
+    {
+        $this->board = $board;
+    }
 
-$columns = computed(fn () => $this->board->columns()->with('cards')->get());
+    #[Computed]
+    public function columns()
+    {
+        return $this->board->columns()->with('cards')->get();
+    }
 
-$createColumn = function () {
-    $this->validate(['newColumnName' => ['required', 'string', 'max:255']], attributes: ['newColumnName' => 'column name']);
+    public function createColumn(): void
+    {
+        $this->validate(
+            ['newColumnName' => ['required', 'string', 'max:255']],
+            attributes: ['newColumnName' => 'column name']
+        );
 
-    $this->board->columns()->create([
-        'name' => $this->newColumnName,
-        'position' => $this->board->columns()->count(),
-    ]);
+        $this->board->columns()->create([
+            'name' => $this->newColumnName,
+            'position' => $this->board->columns()->count(),
+        ]);
 
-    $this->reset('newColumnName', 'showColumnForm');
-};
+        $this->reset('newColumnName', 'showColumnForm');
+    }
 
-$deleteColumn = function (int $columnId) {
-    $this->board->columns()->findOrFail($columnId)->delete();
-};
+    public function deleteColumn(int $columnId): void
+    {
+        $this->board->columns()->findOrFail($columnId)->delete();
+    }
 
-$createCard = function (int $columnId) {
-    $this->validate(['newCardTitle' => ['required', 'string', 'max:255']], attributes: ['newCardTitle' => 'card title']);
+    public function createCard(int $columnId): void
+    {
+        $this->validate(
+            ['newCardTitle' => ['required', 'string', 'max:255']],
+            attributes: ['newCardTitle' => 'card title']
+        );
 
-    $column = $this->board->columns()->findOrFail($columnId);
-    $column->cards()->create([
-        'title' => $this->newCardTitle,
-        'position' => $column->cards()->count(),
-    ]);
+        $column = $this->board->columns()->findOrFail($columnId);
+        $column->cards()->create([
+            'title' => $this->newCardTitle,
+            'position' => $column->cards()->count(),
+        ]);
 
-    $this->reset('newCardTitle', 'addingCardToColumn');
-};
+        $this->reset('newCardTitle', 'addingCardToColumn');
+    }
 
-$deleteCard = function (int $cardId) {
-    Card::whereHas('column', fn ($q) => $q->where('board_id', $this->board->id))
-        ->findOrFail($cardId)
-        ->delete();
-};
+    public function deleteCard(int $cardId): void
+    {
+        Card::whereHas('column', fn ($q) => $q->where('board_id', $this->board->id))
+            ->findOrFail($cardId)
+            ->delete();
+    }
 
-$startEditCard = function (int $cardId) {
-    $card = Card::whereHas('column', fn ($q) => $q->where('board_id', $this->board->id))
-        ->findOrFail($cardId);
+    public function startEditCard(int $cardId): void
+    {
+        $card = Card::whereHas('column', fn ($q) => $q->where('board_id', $this->board->id))
+            ->findOrFail($cardId);
 
-    $this->editingCard = $card->id;
-    $this->editCardTitle = $card->title;
-    $this->editCardDescription = $card->description ?? '';
-};
+        $this->editingCard = $card->id;
+        $this->editCardTitle = $card->title;
+        $this->editCardDescription = $card->description ?? '';
+    }
 
-$saveCard = function () {
-    $this->validate([
-        'editCardTitle' => ['required', 'string', 'max:255'],
-        'editCardDescription' => ['nullable', 'string'],
-    ]);
+    public function saveCard(): void
+    {
+        $this->validate([
+            'editCardTitle' => ['required', 'string', 'max:255'],
+            'editCardDescription' => ['nullable', 'string'],
+        ]);
 
-    Card::whereHas('column', fn ($q) => $q->where('board_id', $this->board->id))
-        ->findOrFail($this->editingCard)
-        ->update(['title' => $this->editCardTitle, 'description' => $this->editCardDescription]);
+        Card::whereHas('column', fn ($q) => $q->where('board_id', $this->board->id))
+            ->findOrFail($this->editingCard)
+            ->update(['title' => $this->editCardTitle, 'description' => $this->editCardDescription]);
 
-    $this->reset('editingCard', 'editCardTitle', 'editCardDescription');
-};
+        $this->reset('editingCard', 'editCardTitle', 'editCardDescription');
+    }
 
-$updateColumnOrder = function (array $orderedIds) {
-    foreach ($orderedIds as $position => $id) {
-        $this->board->columns()->where('id', $id)->update(['position' => $position]);
+    public function updateColumnOrder(array $orderedIds): void
+    {
+        foreach ($orderedIds as $position => $id) {
+            $this->board->columns()->where('id', $id)->update(['position' => $position]);
+        }
+    }
+
+    public function updateCardOrder(int $columnId, array $orderedIds): void
+    {
+        $column = $this->board->columns()->findOrFail($columnId);
+        foreach ($orderedIds as $position => $id) {
+            $column->cards()->where('id', $id)->update(['position' => $position, 'column_id' => $columnId]);
+        }
+    }
+
+    public function moveCard(int $cardId, int $toColumnId, int $position): void
+    {
+        Card::whereHas('column', fn ($q) => $q->where('board_id', $this->board->id))
+            ->findOrFail($cardId)
+            ->update(['column_id' => $toColumnId, 'position' => $position]);
     }
 };
-
-$updateCardOrder = function (int $columnId, array $orderedIds) {
-    $column = $this->board->columns()->findOrFail($columnId);
-    foreach ($orderedIds as $position => $id) {
-        $column->cards()->where('id', $id)->update(['position' => $position, 'column_id' => $columnId]);
-    }
-};
-
-$moveCard = function (int $cardId, int $toColumnId, int $position) {
-    $toColumn = $this->board->columns()->findOrFail($toColumnId);
-
-    Card::whereHas('column', fn ($q) => $q->where('board_id', $this->board->id))
-        ->findOrFail($cardId)
-        ->update(['column_id' => $toColumnId, 'position' => $position]);
-};
-
 ?>
 
 <div>
@@ -173,7 +190,7 @@ $moveCard = function (int $cardId, int $toColumnId, int $position) {
                                     <textarea
                                         wire:model="editCardDescription"
                                         rows="2"
-                                        placeholder="Descriptionâ€¦"
+                                        placeholder="Description&hellip;"
                                         class="w-full rounded border border-gray-300 dark:border-gray-700 bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                                     ></textarea>
                                     <div class="flex gap-2">
@@ -209,7 +226,7 @@ $moveCard = function (int $cardId, int $toColumnId, int $position) {
                                 type="text"
                                 wire:model="newCardTitle"
                                 autofocus
-                                placeholder="Card titleâ€¦"
+                                placeholder="Card title&hellip;"
                                 class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             >
                             @error('newCardTitle')
@@ -243,7 +260,7 @@ $moveCard = function (int $cardId, int $toColumnId, int $position) {
                         type="text"
                         wire:model="newColumnName"
                         autofocus
-                        placeholder="Column nameâ€¦"
+                        placeholder="Column name&hellip;"
                         class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
                     @error('newColumnName')
@@ -279,11 +296,11 @@ $moveCard = function (int $cardId, int $toColumnId, int $position) {
                         .map(el => parseInt(el.dataset.columnId));
                     $wire.updateColumnOrder(ids);
                 }
-            };
+            });
 
             this.$watch('$wire.columns', () => {
                 this.$nextTick(() => this.initCards());
-            };
+            });
 
             this.initCards();
         },
@@ -305,9 +322,9 @@ $moveCard = function (int $cardId, int $toColumnId, int $position) {
                         $wire.moveCard(cardId, toColumnId, orderedIds.indexOf(cardId));
                         $wire.updateCardOrder(toColumnId, orderedIds);
                     }
-                };
+                });
                 this.cardSortables.push(sortable);
-            };
+            });
         }
     }));
 </script>

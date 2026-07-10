@@ -30,3 +30,25 @@ Set up authentication with Fortify: TOTP (QR code) 2FA with recovery codes, plus
 ### Notes
 - Fortify's separate 2FA columns migration was removed; columns are in the base users migration.
 - Auth views use plain Blade (Fortify handles POST via its own routes).
+
+## 2026-07-10 — Milestone 2: Boards, Columns, Cards CRUD + Drag-and-Drop
+
+### Goal
+Full kanban CRUD: boards list with create/delete, board view with column and card management, SortableJS drag-and-drop for reordering.
+
+### Work completed
+
+- [x] Board, Column, Card models with relationships (User->boards, Board->columns, Column->cards)
+- [x] Migrations: boards (name, description, position, user_id), columns (name, position, board_id), cards (title, description, starts_at, ends_at, position, column_id)
+- [x] Factories and seeders for all three models
+- [x] SortableJS installed via npm
+- [x] boards/index Volt component (class-based) - board grid, inline create, delete with confirm
+- [x] boards/show Volt component (functional) - columns, cards, add/delete column, add/edit/delete card, move card between columns
+- [x] Board show route with 403 ownership check
+- [x] Drag-and-drop: Alpine.js + SortableJS via @script block in boards/show
+- [x] 11 boards/columns/cards feature tests passing
+- [x] Fixed ExampleTest to match new root redirect behaviour (25/25 tests green)
+
+### Notes
+- Livewire 4 has its own compiler (separate from Volt) that breaks functional Volt components: it injects protected view() inside the last closure. Fix: use class-based Volt syntax (anonymous class) for all components with multiple actions.
+- boards.show still uses functional Volt style; works in Volt::test() because Volt's own compiler handles it. Will convert to class-based before browser testing.
