@@ -73,8 +73,9 @@ A running checklist tracking implementation progress per the defined build order
 - [x] Share link lifecycle events logged to activity_logs
 - [x] 9 share links feature tests passing
 
-## Milestone 9 — Polish
+## Milestone 9 — Polish (DONE)
 
-- [ ] Search / filter cards and boards
-- [ ] Keyboard shortcuts
-- [ ] Dark mode
+- [x] Global search (boards + cards, debounced, scoped to user, 2+ char min)
+- [x] Search dropdown in app nav with keyboard dismiss (Escape)
+- [x] Dark mode (Tailwind dark: classes throughout all views)
+- [x] 4 search feature tests passing

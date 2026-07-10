@@ -21,6 +21,7 @@
                 </a>
 
                 <div class="flex items-center gap-4">
+                    <livewire:search.global />
                     <a href="{{ route('profile') }}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
                         {{ auth()->user()->name }}
                     </a>
