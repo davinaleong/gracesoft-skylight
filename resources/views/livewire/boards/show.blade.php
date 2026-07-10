@@ -3,7 +3,6 @@
 use App\Models\Board;
 use App\Models\Card;
 use App\Models\Label;
-use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 
 new class extends Component
@@ -40,18 +39,6 @@ new class extends Component
     public function mount(Board $board): void
     {
         $this->board = $board;
-    }
-
-    #[Computed]
-    public function boardColumns()
-    {
-        return $this->board->columns()->with(['cards.labels'])->get();
-    }
-
-    #[Computed]
-    public function boardLabels()
-    {
-        return $this->board->labels()->orderBy('name')->get();
     }
 
     public function createColumn(): void
@@ -175,6 +162,11 @@ new class extends Component
 ?>
 
 <div>
+    @php
+        $boardColumns = $board->columns()->with(['cards.labels'])->get();
+        $boardLabels  = $board->labels()->orderBy('name')->get();
+    @endphp
+
     {{-- Board header --}}
     <div class="flex items-center justify-between mb-6">
         <div class="flex items-center gap-3">
@@ -240,9 +232,9 @@ new class extends Component
             </div>
 
             {{-- Existing labels --}}
-            @if ($this->boardLabels->isNotEmpty())
+            @if ($boardLabels->isNotEmpty())
                 <div class="flex flex-wrap gap-2 mb-4">
-                    @foreach ($this->boardLabels as $label)
+                    @foreach ($boardLabels as $label)
                         <div class="group flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium text-white" style="background-color: {{ $label->color }}">
                             <span>{{ $label->name }}</span>
                             <button
@@ -287,7 +279,7 @@ new class extends Component
         x-init="initColumns()"
         wire:ignore.self
     >
-        @foreach ($this->boardColumns as $column)
+        @foreach ($boardColumns as $column)
             <div
                 class="shrink-0 w-72 flex flex-col rounded-xl bg-gray-100 dark:bg-gray-800/60"
                 data-column-id="{{ $column->id }}"
@@ -362,10 +354,10 @@ new class extends Component
                                     </div>
                                 @endif
                                 {{-- Label toggle (visible on hover if board has labels) --}}
-                                @if ($this->boardLabels->isNotEmpty())
+                                @if ($boardLabels->isNotEmpty())
                                     <div class="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <div class="flex flex-wrap gap-1">
-                                            @foreach ($this->boardLabels as $label)
+                                            @foreach ($boardLabels as $label)
                                                 <button
                                                     wire:click="toggleCardLabel({{ $card->id }}, {{ $label->id }})"
                                                     title="Toggle {{ $label->name }}"
@@ -498,8 +490,11 @@ new class extends Component
                 }
             });
 
-            this.$watch('$wire.boardColumns', () => {
-                this.$nextTick(() => this.initCards());
+            // Re-init SortableJS after each Livewire render cycle
+            Livewire.hook('commit', ({ component, succeed }) => {
+                if (component.name === 'boards.show') {
+                    succeed(() => this.$nextTick(() => this.initCards()));
+                }
             });
 
             this.initCards();
@@ -529,6 +524,7 @@ new class extends Component
     }));
 </script>
 @endscript
+
 
 
 
