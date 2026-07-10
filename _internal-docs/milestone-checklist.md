@@ -53,12 +53,14 @@ A running checklist tracking implementation progress per the defined build order
 - [x] Embeds deferred (allow-list sanitization risk)
 - [x] 8 attachment manager feature tests passing
 
-## Milestone 7 — Activity Log
+## Milestone 7 — Activity Log (DONE)
 
-- [ ] Model observers wired to activity_logs table
-- [ ] Discrete events: create / move / update (with field diffs) / delete
-- [ ] Auth events: login.success/failed, 2fa.verified/failed
-- [ ] IP hashing (never raw)
+- [x] ActivityLog model (polymorphic subject, no updated_at, hashed IP)
+- [x] ActivityLogger service (log(), hashIp(), diff())
+- [x] BoardObserver: board.created, board.updated (field diffs), board.deleted
+- [x] CardObserver: card.created, card.moved, card.updated (field diffs), card.deleted
+- [x] Login event listeners: login.success, login.failed, 2fa.challenged, 2fa.enabled, 2fa.failed
+- [x] 10 activity log feature tests passing
 
 ## Milestone 8 — Board Share Links
 
