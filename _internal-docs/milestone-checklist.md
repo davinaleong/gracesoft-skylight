@@ -22,11 +22,14 @@ A running checklist tracking implementation progress per the defined build order
 - [x] Card model, migration, factory, seeder, CRUD
 - [x] Drag-and-drop reordering via SortableJS + Livewire
 
-## Milestone 3 — Tags and Labels
+## Milestone 3 — Tags and Labels (DONE)
 
-- [ ] Board tags (board_tags pivot)
-- [ ] Column tags (column_tags pivot)
-- [ ] Card labels (card_labels)
+- [x] Board tags (board_tags pivot)
+- [x] Column tags (column_tags pivot)
+- [x] Card labels (card_labels pivot)
+- [x] Label manager UI on board view (create, delete, color picker)
+- [x] Label badges on cards with hover-to-toggle
+- [x] 8 tags/labels feature tests passing
 
 ## Milestone 4 — Checklists and Dates
 
@@ -65,4 +68,3 @@ A running checklist tracking implementation progress per the defined build order
 - [ ] Search / filter cards and boards
 - [ ] Keyboard shortcuts
 - [ ] Dark mode
-

@@ -23,6 +23,11 @@ class User extends Authenticatable
         return $this->hasMany(Board::class)->orderBy('position');
     }
 
+    public function tags(): HasMany
+    {
+        return $this->hasMany(Tag::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

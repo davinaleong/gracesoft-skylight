@@ -2,6 +2,7 @@
 
 use App\Models\Board;
 use App\Models\Card;
+use App\Models\Label;
 use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 
@@ -15,6 +16,11 @@ new class extends Component {
     public string $editCardTitle = '';
     public string $editCardDescription = '';
 
+    // Label management
+    public bool $showLabelManager = false;
+    public string $newLabelName = '';
+    public string $newLabelColor = '#6366f1';
+
     public function mount(Board $board): void
     {
         $this->board = $board;
@@ -23,7 +29,13 @@ new class extends Component {
     #[Computed]
     public function columns()
     {
-        return $this->board->columns()->with('cards')->get();
+        return $this->board->columns()->with(['cards.labels'])->get();
+    }
+
+    #[Computed]
+    public function boardLabels()
+    {
+        return $this->board->labels()->orderBy('name')->get();
     }
 
     public function createColumn(): void
@@ -114,6 +126,35 @@ new class extends Component {
             ->findOrFail($cardId)
             ->update(['column_id' => $toColumnId, 'position' => $position]);
     }
+
+    public function createLabel(): void
+    {
+        $this->validate([
+            'newLabelName' => ['required', 'string', 'max:255'],
+            'newLabelColor' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+        ]);
+
+        $this->board->labels()->create([
+            'name' => $this->newLabelName,
+            'color' => $this->newLabelColor,
+        ]);
+
+        $this->reset('newLabelName', 'newLabelColor');
+        $this->newLabelColor = '#6366f1';
+    }
+
+    public function deleteLabel(int $labelId): void
+    {
+        $this->board->labels()->findOrFail($labelId)->delete();
+    }
+
+    public function toggleCardLabel(int $cardId, int $labelId): void
+    {
+        $card = Card::whereHas('column', fn ($q) => $q->where('board_id', $this->board->id))
+            ->findOrFail($cardId);
+
+        $card->labels()->toggle($labelId);
+    }
 };
 ?>
 
@@ -128,16 +169,79 @@ new class extends Component {
             </a>
             <h1 class="text-2xl font-semibold">{{ $board->name }}</h1>
         </div>
-        <button
-            wire:click="$set('showColumnForm', true)"
-            class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3.5 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-        >
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            Add column
-        </button>
+        <div class="flex items-center gap-2">
+            <button
+                wire:click="$toggle('showLabelManager')"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3.5 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
+                </svg>
+                Labels
+            </button>
+            <button
+                wire:click="$set('showColumnForm', true)"
+                class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3.5 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Add column
+            </button>
+        </div>
     </div>
+
+    {{-- Label manager panel --}}
+    @if ($showLabelManager)
+        <div class="mb-6 rounded-xl bg-white dark:bg-gray-900 p-5 shadow-sm ring-1 ring-gray-200 dark:ring-gray-800">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-base font-semibold">Board Labels</h2>
+                <button wire:click="$set('showLabelManager', false)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+
+            {{-- Existing labels --}}
+            @if ($this->boardLabels->isNotEmpty())
+                <div class="flex flex-wrap gap-2 mb-4">
+                    @foreach ($this->boardLabels as $label)
+                        <div class="group flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium text-white" style="background-color: {{ $label->color }}">
+                            <span>{{ $label->name }}</span>
+                            <button
+                                wire:click="deleteLabel({{ $label->id }})"
+                                wire:confirm="Remove this label? It will be detached from all cards."
+                                class="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/20 rounded-full p-0.5"
+                                aria-label="Delete label"
+                            >
+                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- Create new label --}}
+            <form wire:submit="createLabel" class="flex items-end gap-3">
+                <div class="flex-1">
+                    <label for="newLabelName" class="block text-sm font-medium mb-1.5">New label name</label>
+                    <input id="newLabelName" type="text" wire:model="newLabelName" placeholder="e.g. Bug, Feature, Urgent"
+                        class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 @error('newLabelName') border-red-500 @enderror">
+                    @error('newLabelName')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="newLabelColor" class="block text-sm font-medium mb-1.5">Color</label>
+                    <input id="newLabelColor" type="color" wire:model="newLabelColor"
+                        class="h-10 w-16 cursor-pointer rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-1">
+                </div>
+                <button type="submit" class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-medium text-white shadow-xs transition-colors">
+                    Add
+                </button>
+            </form>
+        </div>
+    @endif
 
     {{-- Kanban board --}}
     <div
@@ -210,6 +314,33 @@ new class extends Component {
                                         </button>
                                     </div>
                                 </div>
+                                {{-- Labels --}}
+                                @if ($card->labels->isNotEmpty())
+                                    <div class="mt-2 flex flex-wrap gap-1">
+                                        @foreach ($card->labels as $label)
+                                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-white" style="background-color: {{ $label->color }}">
+                                                {{ $label->name }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @endif
+                                {{-- Label toggle (visible on hover if board has labels) --}}
+                                @if ($this->boardLabels->isNotEmpty())
+                                    <div class="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div class="flex flex-wrap gap-1">
+                                            @foreach ($this->boardLabels as $label)
+                                                <button
+                                                    wire:click="toggleCardLabel({{ $card->id }}, {{ $label->id }})"
+                                                    title="Toggle {{ $label->name }}"
+                                                    class="rounded-full px-2 py-0.5 text-xs font-medium text-white transition-opacity {{ $card->labels->contains($label) ? 'opacity-100 ring-2 ring-white/50' : 'opacity-40 hover:opacity-80' }}"
+                                                    style="background-color: {{ $label->color }}"
+                                                >
+                                                    {{ $label->name }}
+                                                </button>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
                                 @if ($card->description)
                                     <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{{ $card->description }}</p>
                                 @endif

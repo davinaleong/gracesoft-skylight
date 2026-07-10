@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['user_id', 'name', 'description', 'position'])]
@@ -23,6 +24,16 @@ class Board extends Model
     public function columns(): HasMany
     {
         return $this->hasMany(Column::class)->orderBy('position');
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class, 'board_tags');
+    }
+
+    public function labels(): HasMany
+    {
+        return $this->hasMany(Label::class);
     }
 
     protected function casts(): array
