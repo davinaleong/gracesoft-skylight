@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Models\Board;
 use App\Models\Card;
@@ -6,14 +6,22 @@ use App\Models\Label;
 use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     public Board $board;
+
     public bool $showColumnForm = false;
+
     public string $newColumnName = '';
+
     public ?int $addingCardToColumn = null;
+
     public string $newCardTitle = '';
+
     public ?int $editingCard = null;
+
     public string $editCardTitle = '';
+
     public string $editCardDescription = '';
 
     // Card detail slide-over
@@ -24,7 +32,9 @@ new class extends Component {
 
     // Label management
     public bool $showLabelManager = false;
+
     public string $newLabelName = '';
+
     public string $newLabelColor = '#6366f1';
 
     public function mount(Board $board): void
@@ -33,7 +43,7 @@ new class extends Component {
     }
 
     #[Computed]
-    public function columns()
+    public function boardColumns()
     {
         return $this->board->columns()->with(['cards.labels'])->get();
     }
@@ -277,7 +287,7 @@ new class extends Component {
         x-init="initColumns()"
         wire:ignore.self
     >
-        @foreach ($this->columns as $column)
+        @foreach ($this->boardColumns as $column)
             <div
                 class="shrink-0 w-72 flex flex-col rounded-xl bg-gray-100 dark:bg-gray-800/60"
                 data-column-id="{{ $column->id }}"
@@ -488,7 +498,7 @@ new class extends Component {
                 }
             });
 
-            this.$watch('$wire.columns', () => {
+            this.$watch('$wire.boardColumns', () => {
                 this.$nextTick(() => this.initCards());
             });
 
