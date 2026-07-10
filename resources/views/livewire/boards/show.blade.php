@@ -310,11 +310,11 @@ new class extends Component
                 >
                     @foreach ($column->cards as $card)
                         <div
-                            class="rounded-lg bg-white dark:bg-gray-900 p-3 shadow-xs ring-1 ring-gray-200 dark:ring-gray-700 cursor-grab active:cursor-grabbing select-none"
+                            class="group/card rounded-lg bg-white dark:bg-gray-900 p-3 shadow-xs ring-1 ring-gray-200 dark:ring-gray-700"
                             data-card-id="{{ $card->id }}"
                         >
                             @if ($editingCard === $card->id)
-                                <form wire:submit="saveCard" class="space-y-2">
+                                <form wire:submit="saveCard" class="space-y-2" data-no-drag>
                                     <input
                                         type="text"
                                         wire:model="editCardTitle"
@@ -333,8 +333,13 @@ new class extends Component
                                 </form>
                             @else
                                 <div class="flex items-start justify-between gap-1.5">
-                                    <button wire:click="$set('openCardId', {{ $card->id }})" class="text-sm leading-snug flex-1 text-left hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">{{ $card->title }}</button>
-                                    <div class="flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div class="flex items-start gap-1.5 flex-1 min-w-0">
+                                        <div data-drag-handle class="mt-0.5 shrink-0 cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 opacity-0 group-hover/card:opacity-100 transition-opacity" aria-label="Drag card">
+                                            <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6-12a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
+                                        </div>
+                                        <button wire:click="$set('openCardId', {{ $card->id }})" class="text-sm leading-snug flex-1 text-left hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">{{ $card->title }}</button>
+                                    </div>
+                                    <div class="flex shrink-0 gap-0.5 opacity-0 group-hover/card:opacity-100 transition-opacity">
                                         <button wire:click="startEditCard({{ $card->id }})" class="rounded p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Edit card">
                                             <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" /></svg>
                                         </button>
@@ -343,7 +348,6 @@ new class extends Component
                                         </button>
                                     </div>
                                 </div>
-                                {{-- Labels --}}
                                 @if ($card->labels->isNotEmpty())
                                     <div class="mt-2 flex flex-wrap gap-1">
                                         @foreach ($card->labels as $label)
@@ -355,7 +359,7 @@ new class extends Component
                                 @endif
                                 {{-- Label toggle (visible on hover if board has labels) --}}
                                 @if ($boardLabels->isNotEmpty())
-                                    <div class="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div class="mt-2 opacity-0 group-hover/card:opacity-100 transition-opacity">
                                         <div class="flex flex-wrap gap-1">
                                             @foreach ($boardLabels as $label)
                                                 <button
@@ -508,7 +512,10 @@ new class extends Component
                 const sortable = new Sortable(container, {
                     group: 'cards',
                     animation: 150,
+                    handle: '[data-drag-handle]',
                     ghostClass: 'opacity-30',
+                    filter: '[data-no-drag]',
+                    preventOnFilter: false,
                     onEnd: (evt) => {
                         const toColumnId = parseInt(evt.to.dataset.columnId);
                         const cardId = parseInt(evt.item.dataset.cardId);
