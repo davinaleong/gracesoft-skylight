@@ -62,13 +62,16 @@ A running checklist tracking implementation progress per the defined build order
 - [x] Login event listeners: login.success, login.failed, 2fa.challenged, 2fa.enabled, 2fa.failed
 - [x] 10 activity log feature tests passing
 
-## Milestone 8 — Board Share Links
+## Milestone 8 — Board Share Links (DONE)
 
-- [ ] board_share_links table + share_link_accesses table
-- [ ] 32-byte random base62 token, stored hashed
-- [ ] Read-only viewer routes (rate-limited, X-Robots-Tag: noindex)
-- [ ] Coarse toggles: can_see_comments, can_see_attachments
-- [ ] Revoke / regenerate link UI
+- [x] board_share_links table + share_link_accesses table
+- [x] 32-byte random base62 token, stored SHA-256 hashed (never raw)
+- [x] BoardShareLink::generateToken() + findByToken() helpers
+- [x] Read-only viewer route (rate-limited 30/min, X-Robots-Tag: noindex)
+- [x] Coarse toggles: can_see_comments, can_see_attachments
+- [x] Revoke / regenerate link UI (boards.share-links Volt component)
+- [x] Share link lifecycle events logged to activity_logs
+- [x] 9 share links feature tests passing
 
 ## Milestone 9 — Polish
 

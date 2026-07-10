@@ -36,6 +36,11 @@ class Board extends Model
         return $this->hasMany(Label::class);
     }
 
+    public function shareLinks(): HasMany
+    {
+        return $this->hasMany(BoardShareLink::class);
+    }
+
     protected function casts(): array
     {
         return [
