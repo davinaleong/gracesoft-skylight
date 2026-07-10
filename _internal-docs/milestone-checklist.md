@@ -45,12 +45,13 @@ A running checklist tracking implementation progress per the defined build order
 - [x] Auth-scoped delete (cannot delete other user's comments)
 - [x] 4 comments feature tests passing
 
-## Milestone 6 — Attachment Manager
+## Milestone 6 — Attachment Manager (DONE)
 
-- [ ] Images (S3-compatible upload, signed URL delivery)
-- [ ] Links
-- [ ] Markdown notes (name, content, date created)
-- [ ] Embeds (last — allow-list of trusted sources required)
+- [x] images (disk-agnostic upload, temporary URL delivery, file deletion)
+- [x] Links (URL + optional label)
+- [x] Markdown notes (name, content, create/edit/delete)
+- [x] Embeds deferred (allow-list sanitization risk)
+- [x] 8 attachment manager feature tests passing
 
 ## Milestone 7 — Activity Log
 

@@ -36,6 +36,16 @@ class Card extends Model
         return $this->hasMany(Comment::class)->latest();
     }
 
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(Attachment::class)->latest();
+    }
+
+    public function markdownNotes(): HasMany
+    {
+        return $this->hasMany(MarkdownNote::class)->latest();
+    }
+
     protected function casts(): array
     {
         return [
