@@ -14,8 +14,8 @@
     <div class="flex min-h-screen flex-col items-center justify-center px-4 py-12">
         <div class="mb-8">
             <a href="{{ url('/') }}" class="block">
-                <img src="{{ asset('wm.svg') }}" alt="{{ config('app.name', 'Skylight') }}" class="h-10 dark:hidden" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-                <span class="hidden text-2xl font-bold tracking-tight dark:block">{{ config('app.name', 'Skylight') }}</span>
+                <img src="{{ asset('wm.svg') }}" alt="{{ config('app.name', 'Skylight') }}" class="h-10 dark:hidden">
+                <img src="{{ asset('wm-w.svg') }}" alt="{{ config('app.name', 'Skylight') }}" class="h-10 hidden dark:block">
             </a>
         </div>
 
