@@ -1,73 +1,67 @@
-# GraceSoft Skylight — Tech Stack
+﻿# GraceSoft Skylight — Milestone Checklist
 
-A privacy-first, security-first personal kanban tool with client-facing read-only "viewer" links.
+A running checklist tracking implementation progress per the defined build order.
 
-## Backend
+---
 
-| Layer | Choice | Notes |
-|---|---|---|
-| Framework | **Laravel** (latest LTS) | Consistent with Beacon, Capture, Board — shared mental model for migrations, policies, queues |
-| Auth | **Laravel Fortify** | Ships with email-based 2FA and TOTP (QR code) 2FA out of the box; no hand-rolled OTP crypto |
-| Frontend interactivity | **Livewire + Volt** | Reactive drag-and-drop without a separate SPA/API layer — less surface area to secure |
-| Drag-and-drop | **SortableJS** (via Alpine/Livewire binding) | Lightweight, no heavy JS framework needed |
-| Database | **PostgreSQL** | Already used on Beacon; strong fit for JSONB columns (tags, activity metadata) |
-| Queue/jobs | **Laravel Queues** (database or Redis driver) | For signed URL generation, activity log writes, email sending |
-| File storage | **S3-compatible object storage** | Same pattern as Desk; short-lived signed URLs for attachment access |
+## Milestone 1 — Auth Scaffold (DONE)
 
-## Frontend
+- [x] Install Fortify, Livewire, Volt, BaconQrCode
+- [x] Publish and configure Fortify
+- [x] Add 2FA columns to users migration
+- [x] Configure TOTP (QR code) 2FA feature with recovery codes
+- [x] Create auth views (login, register, 2FA challenge, forgot/reset password, confirm password)
+- [x] Profile page with 2FA enable/disable UI (QR code + recovery codes)
+- [x] Protect routes behind auth middleware
+- [x] Write feature tests for auth flows (12 tests passing)
 
-| Layer | Choice | Notes |
-|---|---|---|
-| Templating | **Blade + Livewire components** | Server-rendered, minimal client JS |
-| Styling | **Tailwind CSS** | Fast iteration, consistent with your other projects |
-| Optional fallback | **Inertia + Svelte** | If you'd rather decouple frontend/backend fully — keep in back pocket, not needed for v1 |
+## Milestone 2 — Boards -> Columns -> Cards
 
-## Security
+- [ ] Board model, migration, factory, seeder, CRUD
+- [ ] Column model, migration, factory, seeder, CRUD
+- [ ] Card model, migration, factory, seeder, CRUD
+- [ ] Drag-and-drop reordering via SortableJS + Livewire
 
-| Feature | Approach |
-|---|---|
-| 2FA | Email OTP + TOTP QR code (Fortify) with recovery codes |
-| Share link tokens | 32-byte random, base62-encoded, **hashed** before storage (same pattern as password reset tokens) |
-| Attachment access | Short-lived signed S3 URLs (~5 min expiry), never permanent public links |
-| Public viewer routes | Rate-limited (~30 req/min/IP), `X-Robots-Tag: noindex` header |
-| IP logging | Hashed, not raw — privacy-preserving even in your own audit log |
+## Milestone 3 — Tags and Labels
 
-## Data Model (v1 scope)
+- [ ] Board tags (board_tags pivot)
+- [ ] Column tags (column_tags pivot)
+- [ ] Card labels (card_labels)
 
-```
-users
-boards
-board_tags
-columns
-column_tags
-cards
-card_labels
-checklists
-checklist_items
-comments
-attachments
-markdown_notes
-activity_logs
+## Milestone 4 — Checklists and Dates
 
-board_user            -- pivot, reserved for future multi-user/enterprise
-board_share_links      -- per-board, read-only, revocable client links
-share_link_accesses    -- lightweight access log for share links
-```
+- [ ] Checklist model + checklist_items
+- [ ] Start / end dates on cards
 
-## Deferred / Future (Enterprise path)
+## Milestone 5 — Comments
 
-- Multi-user collaboration via `board_user` pivot (roles: owner / editor / viewer)
-- Per-scope share links (column- or card-level, not just whole-board)
-- Real-time collaborative editing (would require a different activity-log granularity — field-level diffs/CRDT-style)
+- [ ] Comment model, migration, CRUD
+- [ ] Comments displayed on card detail view
 
-## Build Order (MVP → full)
+## Milestone 6 — Attachment Manager
 
-1. Auth scaffold — Fortify, email + TOTP 2FA, recovery codes
-2. Boards → Columns → Cards CRUD + drag-and-drop reordering
-3. Tags on boards/columns, labels on cards
-4. Checklists + start/end dates
-5. Comments
-6. Attachment manager — images + links + markdown notes first; embeds last (sanitization risk)
-7. Activity log — wired via model observers/events, discrete meaningful actions
-8. Board share links (viewer feature)
-9. Polish — search/filter, keyboard shortcuts, dark mode
+- [ ] Images (S3-compatible upload, signed URL delivery)
+- [ ] Links
+- [ ] Markdown notes (name, content, date created)
+- [ ] Embeds (last — allow-list of trusted sources required)
+
+## Milestone 7 — Activity Log
+
+- [ ] Model observers wired to activity_logs table
+- [ ] Discrete events: create / move / update (with field diffs) / delete
+- [ ] Auth events: login.success/failed, 2fa.verified/failed
+- [ ] IP hashing (never raw)
+
+## Milestone 8 — Board Share Links
+
+- [ ] board_share_links table + share_link_accesses table
+- [ ] 32-byte random base62 token, stored hashed
+- [ ] Read-only viewer routes (rate-limited, X-Robots-Tag: noindex)
+- [ ] Coarse toggles: can_see_comments, can_see_attachments
+- [ ] Revoke / regenerate link UI
+
+## Milestone 9 — Polish
+
+- [ ] Search / filter cards and boards
+- [ ] Keyboard shortcuts
+- [ ] Dark mode
