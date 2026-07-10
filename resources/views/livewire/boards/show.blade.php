@@ -16,6 +16,9 @@ new class extends Component {
     public string $editCardTitle = '';
     public string $editCardDescription = '';
 
+    // Card detail slide-over
+    public ?int $openCardId = null;
+
     // Label management
     public bool $showLabelManager = false;
     public string $newLabelName = '';
@@ -304,7 +307,7 @@ new class extends Component {
                                 </form>
                             @else
                                 <div class="flex items-start justify-between gap-1.5">
-                                    <p class="text-sm leading-snug flex-1">{{ $card->title }}</p>
+                                    <button wire:click="$set('openCardId', {{ $card->id }})" class="text-sm leading-snug flex-1 text-left hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">{{ $card->title }}</button>
                                     <div class="flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button wire:click="startEditCard({{ $card->id }})" class="rounded p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Edit card">
                                             <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" /></svg>
@@ -406,6 +409,38 @@ new class extends Component {
         @endif
     </div>
 </div>
+
+{{-- Card detail slide-over --}}
+@if ($openCardId)
+    @php $openCard = \App\Models\Card::find($openCardId); @endphp
+    @if ($openCard)
+        <div
+            class="fixed inset-0 z-40 flex"
+            x-data
+            x-init="$nextTick(() => $el.querySelector('[data-panel]').focus())"
+        >
+            {{-- Backdrop --}}
+            <div wire:click="$set('openCardId', null)" class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+
+            {{-- Panel --}}
+            <div
+                data-panel
+                tabindex="-1"
+                class="relative ml-auto h-full w-full max-w-md overflow-y-auto bg-white dark:bg-gray-900 shadow-xl p-6 focus:outline-none"
+                @keydown.escape.window="$wire.set('openCardId', null)"
+            >
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-base font-semibold">Card detail</h2>
+                    <button wire:click="$set('openCardId', null)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <livewire:cards.detail :card="$openCard" :key="$openCardId" />
+            </div>
+        </div>
+    @endif
+@endif
 
 @script
 <script>

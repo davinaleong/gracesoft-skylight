@@ -31,10 +31,12 @@ A running checklist tracking implementation progress per the defined build order
 - [x] Label badges on cards with hover-to-toggle
 - [x] 8 tags/labels feature tests passing
 
-## Milestone 4 — Checklists and Dates
+## Milestone 4 — Checklists and Dates (DONE)
 
-- [ ] Checklist model + checklist_items
-- [ ] Start / end dates on cards
+- [x] Checklist model + checklist_items (with progress tracking)
+- [x] Start / end dates on cards (with overdue highlighting)
+- [x] Card detail slide-over panel (cards.detail Volt component)
+- [x] 7 checklists/dates feature tests passing
 
 ## Milestone 5 — Comments
 
