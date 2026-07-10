@@ -2,6 +2,8 @@
 
 use App\Models\Board;
 use App\Models\BoardShareLink;
+use App\Notifications\Board\ShareLinkCreatedNotification;
+use App\Notifications\Board\ShareLinkRevokedNotification;
 use App\Services\ActivityLogger;
 use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
@@ -9,11 +11,8 @@ use Livewire\Volt\Component;
 new class extends Component {
     public Board $board;
 
-    // Options for new link
     public bool $canSeeComments = false;
     public bool $canSeeAttachments = false;
-
-    // Shown once after generation
     public ?string $newlyGeneratedToken = null;
 
     public function mount(Board $board): void
@@ -39,6 +38,14 @@ new class extends Component {
 
         ActivityLogger::log('share_link.created', $this->board);
 
+        // P1 #8: email the owner the token (shown once, never re-read from DB)
+        auth()->user()->notify(new ShareLinkCreatedNotification(
+            board: $this->board,
+            rawToken: $token,
+            canSeeComments: $this->canSeeComments,
+            canSeeAttachments: $this->canSeeAttachments,
+        ));
+
         $this->newlyGeneratedToken = $token;
         $this->reset('canSeeComments', 'canSeeAttachments');
     }
@@ -49,6 +56,10 @@ new class extends Component {
         $link->update(['revoked_at' => now()]);
 
         ActivityLogger::log('share_link.revoked', $this->board);
+
+        // P1 #9: confirmation email on revoke
+        auth()->user()->notify(new ShareLinkRevokedNotification($this->board));
+
         $this->newlyGeneratedToken = null;
     }
 };

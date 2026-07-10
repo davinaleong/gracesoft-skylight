@@ -39,6 +39,18 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
             'password' => 'hashed',
+            'notification_preferences' => 'array',
         ];
+    }
+
+    /**
+     * Check whether the user has a specific P2 notification preference enabled.
+     * Defaults to true if the preference has not been explicitly set.
+     */
+    public function wantsNotification(string $key): bool
+    {
+        $prefs = $this->notification_preferences ?? [];
+
+        return (bool) ($prefs[$key] ?? true);
     }
 }
