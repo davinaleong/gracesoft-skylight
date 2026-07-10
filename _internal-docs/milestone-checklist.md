@@ -38,10 +38,12 @@ A running checklist tracking implementation progress per the defined build order
 - [x] Card detail slide-over panel (cards.detail Volt component)
 - [x] 7 checklists/dates feature tests passing
 
-## Milestone 5 — Comments
+## Milestone 5 — Comments (DONE)
 
-- [ ] Comment model, migration, CRUD
-- [ ] Comments displayed on card detail view
+- [x] Comment model, migration, factory
+- [x] Comments CRUD in card detail slide-over (post, delete own)
+- [x] Auth-scoped delete (cannot delete other user's comments)
+- [x] 4 comments feature tests passing
 
 ## Milestone 6 — Attachment Manager
 

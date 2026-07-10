@@ -3,6 +3,7 @@
 use App\Models\Card;
 use App\Models\Checklist;
 use App\Models\ChecklistItem;
+use App\Models\Comment;
 use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 
@@ -19,6 +20,9 @@ new class extends Component {
     // Checklist item creation
     public ?int $addingItemToChecklist = null;
     public string $newItemBody = '';
+
+    // Comments
+    public string $newCommentBody = '';
 
     public function mount(Card $card): void
     {
@@ -84,6 +88,32 @@ new class extends Component {
     {
         ChecklistItem::whereHas('checklist', fn ($q) => $q->where('card_id', $this->card->id))
             ->findOrFail($itemId)
+            ->delete();
+    }
+
+    #[Computed]
+    public function comments()
+    {
+        return $this->card->comments()->with('user')->get();
+    }
+
+    public function addComment(): void
+    {
+        $this->validate(['newCommentBody' => ['required', 'string', 'max:2000']]);
+
+        $this->card->comments()->create([
+            'user_id' => auth()->id(),
+            'body' => $this->newCommentBody,
+        ]);
+
+        $this->reset('newCommentBody');
+    }
+
+    public function deleteComment(int $commentId): void
+    {
+        $this->card->comments()
+            ->where('user_id', auth()->id())
+            ->findOrFail($commentId)
             ->delete();
     }
 };
@@ -203,6 +233,54 @@ new class extends Component {
             </button>
         </form>
         @error('newChecklistName') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
+    </div>
+
+    {{-- Comments --}}
+    <div class="space-y-4">
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Comments</h3>
+
+        {{-- Add comment --}}
+        <form wire:submit="addComment" class="space-y-2">
+            <textarea
+                wire:model="newCommentBody"
+                rows="3"
+                placeholder="Write a comment&hellip;"
+                class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none @error('newCommentBody') border-red-500 @enderror"
+            ></textarea>
+            @error('newCommentBody') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
+            <button type="submit" class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors">
+                Post comment
+            </button>
+        </form>
+
+        {{-- Comments list --}}
+        @if ($this->comments->isNotEmpty())
+            <div class="space-y-3">
+                @foreach ($this->comments as $comment)
+                    <div class="rounded-xl bg-white dark:bg-gray-900 p-3.5 ring-1 ring-gray-200 dark:ring-gray-800">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ $comment->user->name }}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-gray-400">{{ $comment->created_at->diffForHumans() }}</span>
+                                @if ($comment->user_id === auth()->id())
+                                    <button
+                                        wire:click="deleteComment({{ $comment->id }})"
+                                        wire:confirm="Delete this comment?"
+                                        class="text-gray-300 hover:text-red-500 transition-colors"
+                                        aria-label="Delete comment"
+                                    >
+                                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                                    </button>
+                                @endif
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ $comment->body }}</p>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <p class="text-sm text-gray-400">No comments yet.</p>
+        @endif
     </div>
 </div>
 

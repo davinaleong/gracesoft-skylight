@@ -31,6 +31,11 @@ class Card extends Model
         return $this->hasMany(Checklist::class);
     }
 
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class)->latest();
+    }
+
     protected function casts(): array
     {
         return [
