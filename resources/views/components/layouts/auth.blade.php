@@ -7,7 +7,7 @@
 
     <title>{{ $title ?? config('app.name', 'Skylight') }}</title>
 
-    <link rel="icon" href="{{ asset('logo.svg') }}" type="image/xml+svg"
+    <link rel="icon" href="{{ asset('logo.svg') }}" type="image/xml+svg" >
 
     {{-- Apply dark class before first paint to avoid flash --}}
     <script>

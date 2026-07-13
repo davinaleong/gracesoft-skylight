@@ -19,3 +19,5 @@
     - Replace "GraceSoft Skylight" with wm-w.png/svg (whichever is standard practice for emails)
     - CTA button white on #8E78E2
 - [x] Test notifications
+- [x] Bug: Error shown on auth page
+- [x] Bug: Theme not applied to auth pages
