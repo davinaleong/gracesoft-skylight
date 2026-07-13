@@ -1,11 +1,27 @@
 @import 'tailwindcss';
 
+/* Class-based dark mode — toggled by .dark on <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Brand indigo — #372aac light / #8E78E2 dark */
+    --color-indigo-50:  #f0edfb;
+    --color-indigo-100: #ddd8f5;
+    --color-indigo-200: #bfb5ee;
+    --color-indigo-300: #a192e5;
+    --color-indigo-400: #8e78e2;
+    --color-indigo-500: #6350c9;
+    --color-indigo-600: #372aac;
+    --color-indigo-700: #2d2290;
+    --color-indigo-800: #221a74;
+    --color-indigo-900: #181258;
+    --color-indigo-950: #0e0b38;
 }
 
 /* Markdown prose for card descriptions */
@@ -43,3 +59,13 @@
 .card-prose-sm em { font-style: italic; }
 .card-prose-sm code { font-family: ui-monospace, monospace; font-size: 0.75em; background: rgb(243 244 246); padding: 0.1rem 0.2rem; border-radius: 0.2rem; }
 .dark .card-prose-sm code { background: rgb(31 41 55); }
+
+/* Card colour palette (light + dark) */
+[data-card-color="yellow"] { background-color: #FEF48B; }
+[data-card-color="pink"]   { background-color: #FF87A1; }
+[data-card-color="blue"]   { background-color: #7FDBFF; }
+[data-card-color="green"]  { background-color: #B0E57C; }
+.dark [data-card-color="yellow"] { background-color: #8A7B00; }
+.dark [data-card-color="pink"]   { background-color: #B3264B; }
+.dark [data-card-color="blue"]   { background-color: #0B6E8C; }
+.dark [data-card-color="green"]  { background-color: #4B7A2C; }

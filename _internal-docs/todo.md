@@ -7,6 +7,15 @@
 - [x] Bug: Can't edit a card's start at/end at
 - [x] Feature: Allow markdown text in card's description and render it with simple CSS
 - [x] Feature: Clicking on a card opens a modal showing the expanded version of the selected card
+- [x] Feature: Light/dark, theme switcher
+- [x] Feature: Card colours (background)
+    - Light: #FEF48B, #FF87A1, #7FDBFF, #B0E57C
+    - Dark: #8A7B00, #B3264B, #0B6E8C, #4B7A2C
+- [x] Feature: Allow columns to be draggable too
+- [x] Design: update the app's primary colour to the brand's Indigo. #372aac for light mode, and #8E78E2 for dark mode
 - [x] Test application
-- [ ] Test notification template
-- [ ] Test notifications
+- [x] Mail: Design notification template
+    - Update the design of all mail templates to match the dark theme of GraceSoft Skylight
+    - Replace "GraceSoft Skylight" with wm-w.png/svg (whichever is standard practice for emails)
+    - CTA button white on #8E78E2
+- [x] Test notifications

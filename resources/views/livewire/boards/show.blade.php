@@ -28,6 +28,8 @@ new class extends Component
 
     public string $editCardEndsAt = '';
 
+    public string $editCardColor = '';
+
     // Card detail slide-over
     public ?int $openCardId = null;
 
@@ -99,6 +101,7 @@ new class extends Component
         $this->editCardDescription = $card->description ?? '';
         $this->editCardStartsAt = $card->starts_at?->format('Y-m-d') ?? '';
         $this->editCardEndsAt = $card->ends_at?->format('Y-m-d') ?? '';
+        $this->editCardColor = $card->color ?? '';
     }
 
     public function saveCard(): void
@@ -108,6 +111,7 @@ new class extends Component
             'editCardDescription' => ['nullable', 'string'],
             'editCardStartsAt' => ['nullable', 'date'],
             'editCardEndsAt' => ['nullable', 'date', Rule::when($this->editCardStartsAt !== '', ['after_or_equal:editCardStartsAt'])],
+            'editCardColor' => ['nullable', Rule::in(array_keys(\App\Models\Card::COLORS))],
         ]);
 
         Card::whereHas('column', fn ($q) => $q->where('board_id', $this->board->id))
@@ -117,9 +121,10 @@ new class extends Component
                 'description' => $this->editCardDescription,
                 'starts_at' => $this->editCardStartsAt ?: null,
                 'ends_at' => $this->editCardEndsAt ?: null,
+                'color' => $this->editCardColor ?: null,
             ]);
 
-        $this->reset('editingCard', 'editCardTitle', 'editCardDescription', 'editCardStartsAt', 'editCardEndsAt');
+        $this->reset('editingCard', 'editCardTitle', 'editCardDescription', 'editCardStartsAt', 'editCardEndsAt', 'editCardColor');
     }
 
     public function updateColumnOrder(array $orderedIds): void
@@ -295,12 +300,17 @@ new class extends Component
     >
         @foreach ($boardColumns as $column)
             <div
-                class="shrink-0 w-72 flex flex-col rounded-xl bg-gray-100 dark:bg-gray-800/60"
+                class="group/column shrink-0 w-72 flex flex-col rounded-xl bg-gray-100 dark:bg-gray-800/60"
                 data-column-id="{{ $column->id }}"
             >
                 {{-- Column header --}}
                 <div class="flex items-center justify-between px-3.5 py-3 border-b border-gray-200 dark:border-gray-700/60">
-                    <h3 class="font-medium text-sm truncate">{{ $column->name }}</h3>
+                    <div class="flex items-center gap-1.5 flex-1 min-w-0">
+                        <div data-column-drag-handle class="shrink-0 cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 opacity-0 group-hover/column:opacity-100 transition-opacity" aria-label="Drag column">
+                            <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6-12a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
+                        </div>
+                        <h3 class="font-medium text-sm truncate">{{ $column->name }}</h3>
+                    </div>
                     <div class="flex items-center gap-1">
                         <span class="text-xs text-gray-400 bg-gray-200 dark:bg-gray-700 rounded px-1.5 py-0.5">{{ $column->cards->count() }}</span>
                         <button
@@ -324,8 +334,9 @@ new class extends Component
                 >
                     @foreach ($column->cards as $card)
                         <div
-                            class="group/card rounded-lg bg-white dark:bg-gray-900 p-3 shadow-xs ring-1 ring-gray-200 dark:ring-gray-700"
+                            class="group/card rounded-lg p-3 shadow-xs ring-1 ring-gray-200 dark:ring-gray-700 {{ $card->color ? '' : 'bg-white dark:bg-gray-900' }}"
                             data-card-id="{{ $card->id }}"
+                            @if ($card->color) data-card-color="{{ $card->color }}" @endif
                         >
                             @if ($editingCard === $card->id)
                                 <form wire:submit="saveCard" class="space-y-2" data-no-drag>
@@ -357,6 +368,17 @@ new class extends Component
                                     <div class="flex gap-2">
                                         <button type="submit" class="text-xs rounded bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 font-medium">Save</button>
                                         <button type="button" wire:click="$set('editingCard', null)" class="text-xs rounded border border-gray-300 dark:border-gray-700 px-2.5 py-1">Cancel</button>
+                                    </div>
+                                    {{-- Colour picker --}}
+                                    <div class="flex items-center gap-1.5 pt-1">
+                                        <span class="text-xs text-gray-400">Color:</span>
+                                        <button type="button" @click="$wire.set('editCardColor', '')" title="No color"
+                                            class="h-4 w-4 rounded-full border-2 bg-gray-200 dark:bg-gray-600 transition-all {{ !$editCardColor ? 'border-gray-600 dark:border-white' : 'border-transparent' }}"></button>
+                                        @foreach (\App\Models\Card::COLORS as $colorKey => $colorVal)
+                                            <button type="button" @click="$wire.set('editCardColor', '{{ $colorKey }}')" title="{{ ucfirst($colorKey) }}"
+                                                class="h-4 w-4 rounded-full border-2 transition-all {{ $editCardColor === $colorKey ? 'border-gray-600 dark:border-white' : 'border-transparent' }}"
+                                                style="background-color: {{ $colorVal['light'] }}"></button>
+                                        @endforeach
                                     </div>
                                 </form>
                             @else
@@ -515,7 +537,7 @@ new class extends Component
             // Column drag-and-drop
             this.sortableColumns = new Sortable(boardEl, {
                 animation: 150,
-                handle: '.font-medium',
+                handle: '[data-column-drag-handle]',
                 draggable: '[data-column-id]',
                 ghostClass: 'opacity-30',
                 onEnd: (evt) => {

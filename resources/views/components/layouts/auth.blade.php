@@ -9,6 +9,17 @@
 
     <link rel="icon" href="{{ asset('logo.svg') }}" type="image/xml+svg"
 
+    {{-- Apply dark class before first paint to avoid flash --}}
+    <script>
+        (function () {
+            var stored = localStorage.getItem('theme');
+            var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (stored === 'dark' || (!stored && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>

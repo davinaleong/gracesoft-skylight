@@ -252,7 +252,7 @@ new class extends Component {
 
 <div class="space-y-6">
     {{-- Card title --}}
-    <div>
+    <div @if ($card->color) data-card-color="{{ $card->color }}" @endif class="rounded-lg px-3 py-2 -mx-3 -mt-2 {{ $card->color ? '' : '' }}">
         <h2 class="text-lg font-semibold">{{ $card->title }}</h2>
         @if ($card->description)
             <div class="mt-1 card-prose text-sm text-gray-600 dark:text-gray-400">

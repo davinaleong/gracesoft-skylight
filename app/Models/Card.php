@@ -10,11 +10,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['column_id', 'title', 'description', 'starts_at', 'ends_at', 'position'])]
+#[Fillable(['column_id', 'title', 'description', 'starts_at', 'ends_at', 'position', 'color'])]
 class Card extends Model
 {
     /** @use HasFactory<CardFactory> */
     use HasFactory;
+
+    /** @var array<string, array{light: string, dark: string}> */
+    public const COLORS = [
+        'yellow' => ['light' => '#FEF48B', 'dark' => '#8A7B00'],
+        'pink' => ['light' => '#FF87A1', 'dark' => '#B3264B'],
+        'blue' => ['light' => '#7FDBFF', 'dark' => '#0B6E8C'],
+        'green' => ['light' => '#B0E57C', 'dark' => '#4B7A2C'],
+    ];
 
     public function column(): BelongsTo
     {
