@@ -7,6 +7,8 @@
 
     <title>{{ $title ?? config('app.name', 'Skylight') }}</title>
 
+    <link rel="icon" href="{{ asset('logo.svg') }}" type="image/xml+svg"
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
