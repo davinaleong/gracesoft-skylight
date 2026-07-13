@@ -6,6 +6,8 @@ use App\Models\Checklist;
 use App\Models\ChecklistItem;
 use App\Models\Comment;
 use App\Models\MarkdownNote;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
@@ -60,13 +62,15 @@ new class extends Component {
     {
         $this->validate([
             'startsAt' => ['nullable', 'date'],
-            'endsAt' => ['nullable', 'date', 'after_or_equal:startsAt'],
+            'endsAt' => ['nullable', 'date', Rule::when($this->startsAt !== '', ['after_or_equal:startsAt'])],
         ]);
 
         $this->card->update([
             'starts_at' => $this->startsAt ?: null,
             'ends_at' => $this->endsAt ?: null,
         ]);
+
+        $this->card->refresh();
     }
 
     public function createChecklist(): void
@@ -251,7 +255,9 @@ new class extends Component {
     <div>
         <h2 class="text-lg font-semibold">{{ $card->title }}</h2>
         @if ($card->description)
-            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ $card->description }}</p>
+            <div class="mt-1 card-prose text-sm text-gray-600 dark:text-gray-400">
+                {!! Str::markdown($card->description, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+            </div>
         @endif
     </div>
 

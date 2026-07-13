@@ -7,3 +7,39 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* Markdown prose for card descriptions */
+.card-prose > * + * { margin-top: 0.5rem; }
+.card-prose p:last-child { margin-bottom: 0; }
+.card-prose h1, .card-prose h2, .card-prose h3, .card-prose h4 { font-weight: 600; line-height: 1.25; margin-top: 0.75rem; margin-bottom: 0.25rem; }
+.card-prose h1 { font-size: 1rem; }
+.card-prose h2 { font-size: 0.9375rem; }
+.card-prose h3, .card-prose h4 { font-size: 0.875rem; }
+.card-prose ul { list-style-type: disc; padding-left: 1.25rem; }
+.card-prose ol { list-style-type: decimal; padding-left: 1.25rem; }
+.card-prose li + li { margin-top: 0.125rem; }
+.card-prose strong { font-weight: 600; }
+.card-prose em { font-style: italic; }
+.card-prose a { color: rgb(79 70 229); text-decoration: underline; }
+.card-prose code { font-family: ui-monospace, 'Cascadia Code', monospace; font-size: 0.8em; background: rgb(243 244 246); padding: 0.125rem 0.3rem; border-radius: 0.25rem; }
+.card-prose pre { background: rgb(243 244 246); border-radius: 0.375rem; padding: 0.75rem; overflow-x: auto; }
+.card-prose pre code { background: transparent; padding: 0; font-size: 0.8em; }
+.card-prose blockquote { border-left: 2px solid rgb(209 213 219); padding-left: 0.75rem; font-style: italic; color: rgb(107 114 128); }
+.card-prose hr { border-color: rgb(229 231 235); margin: 0.75rem 0; }
+.dark .card-prose code { background: rgb(31 41 55); }
+.dark .card-prose pre { background: rgb(31 41 55); }
+.dark .card-prose blockquote { border-color: rgb(75 85 99); color: rgb(156 163 175); }
+.dark .card-prose hr { border-color: rgb(55 65 81); }
+.dark .card-prose a { color: rgb(129 140 248); }
+
+/* Compact markdown prose for kanban card previews */
+.card-prose-sm { font-size: 0.75rem; line-height: 1.5; }
+.card-prose-sm > * + * { margin-top: 0.25rem; }
+.card-prose-sm p:last-child { margin-bottom: 0; }
+.card-prose-sm h1, .card-prose-sm h2, .card-prose-sm h3, .card-prose-sm h4 { font-weight: 600; font-size: 0.8125rem; line-height: 1.25; }
+.card-prose-sm ul { list-style-type: disc; padding-left: 1rem; }
+.card-prose-sm ol { list-style-type: decimal; padding-left: 1rem; }
+.card-prose-sm strong { font-weight: 600; }
+.card-prose-sm em { font-style: italic; }
+.card-prose-sm code { font-family: ui-monospace, monospace; font-size: 0.75em; background: rgb(243 244 246); padding: 0.1rem 0.2rem; border-radius: 0.2rem; }
+.dark .card-prose-sm code { background: rgb(31 41 55); }
