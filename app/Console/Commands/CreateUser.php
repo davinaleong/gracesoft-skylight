@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
-#[Signature('app:create-user')]
+#[Signature('app:create-user {--name= : Full name} {--email= : Email address} {--password= : Password}')]
 #[Description('Create a new user account interactively')]
 class CreateUser extends Command
 {
@@ -19,22 +19,19 @@ class CreateUser extends Command
      */
     public function handle(): int
     {
-        $this->info('Creating a new user account.');
-        $this->newLine();
-
-        $name = $this->askValid(
+        $name = $this->option('name') ?? $this->askValid(
             'Name',
             fn (string $v) => Validator::make(['name' => $v], ['name' => ['required', 'string', 'max:255']])
         );
 
-        $email = $this->askValid(
+        $email = $this->option('email') ?? $this->askValid(
             'Email address',
             fn (string $v) => Validator::make(['email' => $v], [
                 'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             ])
         );
 
-        $password = $this->secret('Password (hidden)');
+        $password = $this->option('password') ?? $this->secret('Password (hidden)');
 
         $validation = Validator::make(
             ['password' => $password],
