@@ -34,19 +34,19 @@ new class extends Component {
 };
 ?>
 
-<div x-data="{ open: @entangle('open') }" @keydown.escape.window="open = false" class="relative">
+<div x-data="{ open: @entangle('open') }" @keydown.escape.window="open = false" class="relative flex-1 min-w-0">
     {{-- Search input --}}
     <div class="relative">
-        <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-        </svg>
         <input
             type="search"
             wire:model.live.debounce.300ms="query"
             @focus="open = true"
-            placeholder="Search boards & cards&hellip;"
-            class="w-64 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 pl-9 pr-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            placeholder="Search boards &amp; cards&hellip;"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 pl-3.5 pr-9 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
+        <svg class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+        </svg>
     </div>
 
     {{-- Results dropdown --}}
