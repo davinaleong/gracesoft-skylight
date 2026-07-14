@@ -153,3 +153,40 @@ Notes:
 
 - **Existing users created before this iteration have zero workspaces** — every board they own is still scoped only by `boards.user_id`. This is intentional and handled in the next iteration (Milestone 1: "Migrate existing single-user board data model to workspace_id scoping"), which adds `workspace_id` to `boards`/`tags` and backfills a personal workspace for every pre-existing user in the same migration.
 - Roles beyond `owner` (`admin`/`member`/`viewer`) are defined but unused until Milestone 2 builds invites and permission checks — flagging so it isn't mistaken for forgotten scope.
+
+## 2026-07-14 - Iteration 6 (Milestone 1)
+
+Implemented item:
+
+- Migrate existing single-user board data model to workspace_id scoping
+
+Changes made:
+
+- **Architecture change**: introduced `App\Observers\UserObserver::created()` (registered in `AppServiceProvider`) that calls `Workspace::createForUser($user)` for every `User` row, full stop — registration, OAuth signup, factories, seeders, tinker, all covered by one code path instead of scattering the call at every creation site. `CreateNewUser` and `SocialiteController` were reverted back to plain `User::create(...)` (removed the `DB::transaction`/explicit `Workspace::createForUser` calls added in the previous iteration) since the observer now guarantees the invariant.
+- Migration `2026_07_14_043052_add_workspace_id_to_boards_and_tags_tables`:
+    - Adds nullable `workspace_id` (FK to `workspaces`, cascade delete) to `boards` and `tags`.
+    - Backfills a personal `owner`-role workspace for any pre-existing user that doesn't have one yet (i.e. everyone who signed up before this deployment — new users are already covered by the observer).
+    - Backfills `boards.workspace_id` / `tags.workspace_id` from each row's `user_id`'s owner workspace.
+    - Makes both columns `NOT NULL`.
+    - `tags`: replaces the `[user_id, name]` unique index with `[workspace_id, name]` (tags are now workspace-scoped, not user-scoped, so future workspace-mates share one tag namespace). Had to add a plain index on `tags.user_id` first — MySQL refused to drop the old composite unique index because it was also the only index backing the `user_id` foreign key.
+    - Hit and fixed a real deployment hazard on the local MySQL dev DB: MySQL DDL isn't transactional, so the first (buggy) run of this migration left `tags`/`boards` half-migrated when the `DROP INDEX` step failed. Had to manually revert the partial DDL before re-running the corrected migration — documenting here in case the same failure mode shows up again on a shared environment.
+- `Board` and `Tag` models: `booted()` now auto-fills `workspace_id` from the creator's (`user_id`'s) personal workspace on `creating` if the caller didn't set one explicitly — mirrors the existing UUID auto-generation pattern on `Board`. This means every existing board-creation call site (the `boards.index` Volt component, factories, tests) keeps working with zero changes; only `Board`/`Tag`'s `fillable` list and the model boot hook changed.
+- `Workspace` model: added `boards()`/`tags()` `HasMany` relations and a `hasMember(User $user): bool` helper.
+- `Board` model: added `workspace()` `BelongsTo`.
+- Swapped the board-access authorization check in `routes/web.php` (`/boards/{board}`) from `$board->user_id === auth()->id()` to `$board->workspace->hasMember(auth()->user())` — functionally identical today (one owner per personal workspace) but this is now the actual scoping mechanism Milestone 2's shared workspaces will plug into.
+
+Tests added/updated:
+
+- New tests in `tests/Feature/WorkspacesTest.php`: new boards/tags auto-assign to the creator's personal workspace, an explicit `workspace_id` passed to the factory overrides the default, and `Workspace::hasMember()` returns true for the owner / false for a stranger.
+- Existing `tests/Feature/BoardsTest.php` "forbids access by another user" test continues to pass unchanged, now exercising the new workspace-membership check.
+
+Validation:
+
+- Full suite: passing (101/101)
+- Pint (dirty): passing (auto-fixed a class-attribute-spacing nit in `BoardFactory`)
+- Manual verification: registered a fresh user through the real `/register` form in a browser, confirmed via `tinker` that exactly one workspace was auto-created with `role = owner`, created a board for that user and confirmed `workspace_id` matched, then loaded `/boards/{uuid}` in the browser as that user and confirmed the page rendered (workspace-membership auth check passing for the true owner). Test user cleaned up afterward.
+
+Notes:
+
+- `boards.user_id` and `tags.user_id` are kept (not dropped) — they still mean "creator", same as `comments.user_id`/`attachments.user_id` elsewhere in this codebase. `workspace_id` is the new access-scoping key; `user_id` is authorship metadata.
+- Milestone 1's board/tag data model migration is now complete. What's *not* done yet (intentionally, it's Milestone 2 scope): actually inviting a second person into a workspace, an admin/member/viewer permission matrix, and a workspace switcher UI — right now every workspace has exactly one member (its owner), so this iteration only proves the plumbing, not multi-user collaboration.

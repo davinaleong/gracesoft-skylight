@@ -13,6 +13,7 @@ use App\Notifications\Auth\SuspiciousLoginNotification;
 use App\Notifications\Auth\WelcomeNotification;
 use App\Observers\BoardObserver;
 use App\Observers\CardObserver;
+use App\Observers\UserObserver;
 use App\Services\ActivityLogger;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
@@ -35,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Board::observe(BoardObserver::class);
         Card::observe(CardObserver::class);
+        User::observe(UserObserver::class);
 
         // Rate-limit for public viewer routes: 30 req/min per IP
         RateLimiter::for('viewer', fn () => Limit::perMinute(30)->by(Request::ip()));

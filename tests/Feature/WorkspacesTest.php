@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Board;
+use App\Models\Tag;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -45,7 +47,7 @@ describe('workspace creation', function () {
 
     it('does not create a duplicate workspace when an oauth login links to an existing account', function () {
         $user = User::factory()->create(['email' => 'linked@example.com']);
-        $workspace = Workspace::createForUser($user);
+        $workspace = $user->workspaces->firstOrFail();
 
         Socialite::fake('google', SocialiteUser::fake([
             'id' => 'g-789',
@@ -79,5 +81,46 @@ describe('Workspace::createForUser', function () {
         $workspace = Workspace::createForUser($user);
 
         expect($workspace->name)->toBe("Test User's Workspace");
+    });
+});
+
+describe('workspace scoping on boards and tags', function () {
+    it('auto-assigns a new board to its creator personal workspace', function () {
+        $user = User::factory()->create();
+
+        $board = Board::factory()->create(['user_id' => $user->id]);
+
+        expect($board->workspace_id)->toBe($user->workspaces->firstOrFail()->id);
+    });
+
+    it('lets an explicit workspace_id override the default', function () {
+        $user = User::factory()->create();
+        $otherWorkspace = Workspace::factory()->create();
+
+        $board = Board::factory()->create([
+            'user_id' => $user->id,
+            'workspace_id' => $otherWorkspace->id,
+        ]);
+
+        expect($board->workspace_id)->toBe($otherWorkspace->id);
+    });
+
+    it('auto-assigns a new tag to its creator personal workspace', function () {
+        $user = User::factory()->create();
+
+        $tag = Tag::factory()->create(['user_id' => $user->id]);
+
+        expect($tag->workspace_id)->toBe($user->workspaces->firstOrFail()->id);
+    });
+});
+
+describe('Workspace::hasMember', function () {
+    it('returns true for the owner and false for a stranger', function () {
+        $owner = User::factory()->create();
+        $stranger = User::factory()->create();
+        $workspace = $owner->workspaces->firstOrFail();
+
+        expect($workspace->hasMember($owner))->toBeTrue();
+        expect($workspace->hasMember($stranger))->toBeFalse();
     });
 });

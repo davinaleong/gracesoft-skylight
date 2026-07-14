@@ -4,10 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Workspace;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\InvalidStateException;
@@ -71,20 +69,16 @@ class SocialiteController extends Controller
             return $byEmail;
         }
 
-        return DB::transaction(function () use ($provider, $socialiteUser) {
-            $user = User::create([
-                'name' => $socialiteUser->getName() ?: $socialiteUser->getNickname() ?: $socialiteUser->getEmail(),
-                'email' => $socialiteUser->getEmail(),
-                'password' => null,
-                'oauth_provider' => $provider,
-                'oauth_provider_id' => $socialiteUser->getId(),
-            ]);
+        $user = User::create([
+            'name' => $socialiteUser->getName() ?: $socialiteUser->getNickname() ?: $socialiteUser->getEmail(),
+            'email' => $socialiteUser->getEmail(),
+            'password' => null,
+            'oauth_provider' => $provider,
+            'oauth_provider_id' => $socialiteUser->getId(),
+        ]);
 
-            $user->forceFill(['email_verified_at' => now()])->save();
+        $user->forceFill(['email_verified_at' => now()])->save();
 
-            Workspace::createForUser($user);
-
-            return $user;
-        });
+        return $user;
     }
 }

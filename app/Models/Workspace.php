@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -71,5 +72,20 @@ class Workspace extends Model
         return $this->belongsToMany(User::class, 'workspace_user')
             ->withPivot('role')
             ->withTimestamps();
+    }
+
+    public function hasMember(User $user): bool
+    {
+        return $this->users()->whereKey($user->id)->exists();
+    }
+
+    public function boards(): HasMany
+    {
+        return $this->hasMany(Board::class);
+    }
+
+    public function tags(): HasMany
+    {
+        return $this->hasMany(Tag::class);
     }
 }

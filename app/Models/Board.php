@@ -11,20 +11,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
-#[Fillable(['user_id', 'name', 'description', 'position'])]
+#[Fillable(['user_id', 'workspace_id', 'name', 'description', 'position'])]
 class Board extends Model
 {
     /** @use HasFactory<BoardFactory> */
     use HasFactory;
 
     /**
-     * Auto-generate a UUID whenever a board is first created.
+     * Auto-generate a UUID whenever a board is first created, and default it to
+     * its creator's personal workspace when the caller didn't set one explicitly.
      * The integer PK (id) remains for SQL joins and foreign keys.
      */
     protected static function booted(): void
     {
         static::creating(function (Board $board) {
             $board->uuid ??= (string) Str::uuid();
+
+            if (blank($board->workspace_id) && $board->user_id) {
+                $board->workspace_id = User::find($board->user_id)?->workspaces()->value('workspaces.id');
+            }
         });
     }
 
@@ -39,6 +44,11 @@ class Board extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function workspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class);
     }
 
     public function columns(): HasMany

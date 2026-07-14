@@ -30,7 +30,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/home', fn () => view('home'))->name('home');
 
     Route::get('/boards/{board}', function (Board $board) {
-        abort_unless($board->user_id === auth()->id(), 403);
+        abort_unless($board->workspace->hasMember(auth()->user()), 403);
 
         return view('boards.show', ['board' => $board]);
     })->name('boards.show');
