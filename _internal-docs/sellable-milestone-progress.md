@@ -190,3 +190,34 @@ Notes:
 
 - `boards.user_id` and `tags.user_id` are kept (not dropped) — they still mean "creator", same as `comments.user_id`/`attachments.user_id` elsewhere in this codebase. `workspace_id` is the new access-scoping key; `user_id` is authorship metadata.
 - Milestone 1's board/tag data model migration is now complete. What's *not* done yet (intentionally, it's Milestone 2 scope): actually inviting a second person into a workspace, an admin/member/viewer permission matrix, and a workspace switcher UI — right now every workspace has exactly one member (its owner), so this iteration only proves the plumbing, not multi-user collaboration.
+
+## 2026-07-14 - Iteration 7 (Milestone 1)
+
+Implemented item:
+
+- Basic account settings page (name, email, password, avatar)
+
+Changes made:
+
+- Name/email/password editing already existed via Fortify on `profile/index.blade.php` (account information form + change password form, both already covered by `AuthTest`/existing profile tests) — this iteration adds the missing piece: **avatar**.
+- Migration `2026_07_14_050322_add_avatar_path_to_users_table`: adds nullable `avatar_path` to `users`.
+- `User` model: added `avatar_path` to fillable, and an `avatarUrl(int $expiryMinutes = 60): ?string` helper that mirrors `Attachment::temporaryUrl()`'s disk-agnostic delivery pattern (uses the `local` disk's `serve`-based temporary URL when supported, falls back to `$disk->url()` otherwise) — same convention already used for image attachments.
+- New Volt component `resources/views/livewire/profile/avatar.blade.php`:
+    - `upload()`: validates `image`, max 5 MB; stores under `avatars/` on `config('filesystems.default')`; deletes the previous file (if any) after the new one is saved successfully; updates `users.avatar_path`.
+    - `remove()`: deletes the file from disk and clears `avatar_path`.
+    - Shows a circular avatar image when one is set, otherwise a fallback circle with the user's first initial.
+- Wired into `profile/index.blade.php` via `@livewire('profile.avatar')`, above the existing account-information card.
+
+Tests added/updated:
+
+- New `tests/Feature/ProfileAvatarTest.php` (6 tests): fallback initial shown with no avatar, successful upload (file persisted + `avatar_path` set), rejects non-image files, rejects files over the 5 MB limit, replacing an avatar deletes the old file from disk, removing an avatar deletes the file and clears `avatar_path`.
+
+Validation:
+
+- Full suite: passing (107/107)
+- Pint (dirty): passing
+- Manual browser check: created a verified user via `tinker`, logged in through the real `/login` form, loaded `/profile`, and confirmed the Avatar card renders above Account information with the correct fallback-initial placeholder. Test user cleaned up afterward.
+
+Notes:
+
+- **Milestone 1 — Self-Serve Foundation is now fully complete.** All 7 items checked off: public signup, OAuth signup (Google/GitHub, pending real credentials), workspace/tenant model, workspace_id data scoping, and this account settings page.

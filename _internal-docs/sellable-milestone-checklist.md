@@ -14,7 +14,7 @@ _Goal: someone can sign up and use it without you creating their account._
 - [x] Password reset flow (confirm works end-to-end for self-serve users)
 - [x] Workspace/tenant model — each account gets an isolated workspace
 - [x] Migrate existing single-user board data model to `workspace_id` scoping
-- [ ] Basic account settings page (name, email, password, avatar)
+- [x] Basic account settings page (name, email, password, avatar)
 
 ## Milestone 2 — Teams & Collaboration
 

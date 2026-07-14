@@ -11,9 +11,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
-#[Fillable(['name', 'email', 'password', 'oauth_provider', 'oauth_provider_id'])]
+#[Fillable(['name', 'email', 'password', 'oauth_provider', 'oauth_provider_id', 'avatar_path'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable implements MustVerifyEmailContract
 {
@@ -61,5 +62,24 @@ class User extends Authenticatable implements MustVerifyEmailContract
         $prefs = $this->notification_preferences ?? [];
 
         return (bool) ($prefs[$key] ?? true);
+    }
+
+    /**
+     * Generate a URL for the user's avatar, if one is set.
+     * Mirrors Attachment::temporaryUrl()'s disk-agnostic delivery approach.
+     */
+    public function avatarUrl(int $expiryMinutes = 60): ?string
+    {
+        if (! $this->avatar_path) {
+            return null;
+        }
+
+        $disk = Storage::disk(config('filesystems.default'));
+
+        if (method_exists($disk->getAdapter(), 'temporaryUrl')) {
+            return $disk->temporaryUrl($this->avatar_path, now()->addMinutes($expiryMinutes));
+        }
+
+        return $disk->url($this->avatar_path);
     }
 }

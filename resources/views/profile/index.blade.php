@@ -2,6 +2,9 @@
     <div class="max-w-2xl space-y-6">
         <h1 class="text-2xl font-semibold">Profile settings</h1>
 
+        {{-- Avatar --}}
+        @livewire('profile.avatar')
+
         {{-- Update profile information --}}
         <div class="rounded-xl bg-white dark:bg-gray-900 p-6 shadow-sm ring-1 ring-gray-200 dark:ring-gray-800">
             <h3 class="mb-4 text-base font-semibold">Account information</h3>
