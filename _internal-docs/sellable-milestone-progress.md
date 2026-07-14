@@ -409,3 +409,31 @@ Validation:
 Notes:
 
 - Handles are name-derived, not a stored username — if two workspace members share the exact same slugged name (e.g. two "John Smith"s), mentioning either produces the same handle and both get notified. Acceptable for small teams; a real username field would be the fix if this becomes a problem, but wasn't warranted for this checklist item.
+
+## 2026-07-14 - Iteration 14 (Milestone 2)
+
+Implemented item:
+
+- Activity feed per board
+
+Changes made:
+
+- `CardObserver` now embeds `board_id` (and `card_title`, renamed from the collision-prone `title` key) into every `card.*` event's `properties` JSON — `created`, `updated`, `moved`, `deleted`. This is the key fix that makes a *board-scoped* feed possible at all: `ActivityLog.subject_type/subject_id` point at the `Card` row, which is gone after `card.deleted` (hard-deleted, no soft-delete in this app), so there'd be no way to attribute a deleted card's log entry back to a board without storing the board id in `properties` at write time.
+- New Volt component `resources/views/livewire/boards/activity.blade.php`: queries `ActivityLog` for `(subject_type = Board AND subject_id = $board->id) OR (subject_type = Card AND properties->board_id = $board->id)` — the JSON path query works against both MySQL and SQLite via Laravel's query builder — latest 50, with a `describe(ActivityLog $log): string` method that turns `{event, properties}` into a human sentence per event type (`board.created`, `board.updated`, `card.created`, `card.updated`, `card.moved` — resolves the destination column's current name, falling back to "a deleted column" — `card.deleted`, and the three `share_link.*` events, which already logged the board as their subject).
+- Wired into `boards/show.blade.php` as a fourth toggle button ("Activity") next to Share/Labels, opening a scrollable panel (`max-h-96 overflow-y-auto`) — same collapsible-panel convention already used for those two.
+
+Tests added/updated:
+
+- New `tests/Feature/BoardActivityFeedTest.php` (6 tests): board + card creation events show up with readable text, activity from a *different* board never leaks into this board's feed, a deleted card's event still appears (proving the `board_id`-in-properties fix works), a card move is described by its destination column's name, a plain field update renders correctly, and an empty board shows "No activity yet."
+- **Caught and fixed a real bug during manual verification** that the automated test suite initially missed: the `card.updated` branch of `describe()` did `implode(', ', array_diff_key($props, ...))` — but `ActivityLogger::diff()` produces `{old, new}` *array* values per changed field, not strings, so `implode()` threw "Array to string conversion" (a hard 500) the moment anyone changed a card's title/description without moving it. Fixed to `implode(', ', array_keys(array_diff_key(...)))` and added a dedicated regression test (`'describes a plain card field update without crashing on the diff values'`) so this can't silently regress again.
+
+Validation:
+
+- Full suite: passing (157/157, up from 151 after adding the regression test)
+- Pint (dirty): passing
+- Manual browser check: this is what caught the bug above. Created a board/column/card via `tinker`, updated the card's title, opened the board in a real browser, clicked "Activity" — got a silent failure (Livewire's dev overlay logged a JSON-parse error from an HTML 500 response). Traced it to `storage/logs/laravel.log`, found the "Array to string conversion" exception, fixed the source, and reloaded to confirm the panel now renders three readable entries ("created card...", "updated card... (title)", "created this board") with correct relative timestamps.
+
+Notes:
+
+- **Milestone 2 — Teams & Collaboration is now fully complete.** All 7 items checked off: team invites, roles, permission checks, member management, in-app notifications, @mentions, and this board activity feed.
+- This iteration is a good example of why the verify step matters even when unit tests are green: the bug only manifested on the one code path (`card.updated` with no move) that none of the *other* feature's tests happened to exercise, because `BoardsTest`/`ChecklistsTest`/etc. test their own domain, not the activity feed's rendering of their side effects.

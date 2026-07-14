@@ -26,7 +26,7 @@ _Goal: more than one person can work in a workspace._
 - [x] Member management UI (remove/re-invite/change role)
 - [x] @mentions in comments
 - [x] In-app notifications (bell/dropdown), not just email
-- [ ] Activity feed per board
+- [x] Activity feed per board
 
 ## Milestone 3 — Onboarding & First Impressions
 

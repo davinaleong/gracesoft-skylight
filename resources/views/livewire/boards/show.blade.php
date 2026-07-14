@@ -46,6 +46,9 @@ new class extends Component
 
     public string $newLabelColor = '#6366f1';
 
+    // Activity feed
+    public bool $showActivity = false;
+
     public function mount(Board $board): void
     {
         $this->board = $board;
@@ -242,6 +245,14 @@ new class extends Component
                 </svg>
                 Labels
             </button>
+            <button wire:click="$toggle('showActivity')"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3.5 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                Activity
+            </button>
             <button
                 wire:click="$set('showColumnForm', true)"
                 class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3.5 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
@@ -315,6 +326,21 @@ new class extends Component
                     Add
                 </button>
             </form>
+        </div>
+    @endif
+
+    {{-- Activity feed panel --}}
+    @if ($showActivity)
+        <div class="mb-6 rounded-xl bg-white dark:bg-gray-900 p-5 shadow-sm ring-1 ring-gray-200 dark:ring-gray-800">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-base font-semibold">Activity</h2>
+                <button wire:click="$set('showActivity', false)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div class="max-h-96 overflow-y-auto">
+                <livewire:boards.activity :board="$board" :key="'activity-'.$board->id" />
+            </div>
         </div>
     @endif
 
