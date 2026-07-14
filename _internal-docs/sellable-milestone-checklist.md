@@ -21,7 +21,7 @@ _Goal: someone can sign up and use it without you creating their account._
 _Goal: more than one person can work in a workspace._
 
 - [x] Team invite by email
-- [ ] Roles: Admin / Member / Viewer
+- [x] Roles: Admin / Member / Viewer
 - [ ] Permission checks on board/card actions per role
 - [ ] Member management UI (remove/re-invite/change role)
 - [ ] @mentions in comments

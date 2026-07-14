@@ -87,12 +87,46 @@ class Workspace extends Model
         return $this->users()->whereKey($user->id)->first()?->pivot->role;
     }
 
+    public function isOwner(User $user): bool
+    {
+        return $this->roleOf($user) === self::ROLE_OWNER;
+    }
+
+    public function isViewer(User $user): bool
+    {
+        return $this->roleOf($user) === self::ROLE_VIEWER;
+    }
+
     /**
      * Owners and admins can invite/remove members and change roles.
      */
     public function canManageMembers(User $user): bool
     {
         return in_array($this->roleOf($user), [self::ROLE_OWNER, self::ROLE_ADMIN], true);
+    }
+
+    /**
+     * Owners, admins, and members can create/edit/delete boards, columns, cards,
+     * and everything under them. Viewers are read-only.
+     */
+    public function canEditContent(User $user): bool
+    {
+        return $this->hasMember($user) && ! $this->isViewer($user);
+    }
+
+    /**
+     * Whether $actor may change $target's role or remove them from the workspace.
+     * The owner role is permanent (never assignable via invite, never revocable) so
+     * there's always exactly one owner, and nobody — including the owner — can
+     * touch the owner's own membership through this path.
+     */
+    public function canChangeMember(User $actor, User $target): bool
+    {
+        if ($this->isOwner($target)) {
+            return false;
+        }
+
+        return $this->canManageMembers($actor);
     }
 
     public function boards(): HasMany

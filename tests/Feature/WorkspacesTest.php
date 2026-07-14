@@ -151,3 +151,54 @@ describe('Workspace::roleOf and canManageMembers', function () {
         expect($workspace->canManageMembers($stranger))->toBeFalse();
     });
 });
+
+describe('Workspace::isOwner, isViewer, canEditContent', function () {
+    it('identifies the owner and viewer roles correctly', function () {
+        $owner = User::factory()->create();
+        $viewer = User::factory()->create();
+        $workspace = $owner->currentWorkspace();
+        $workspace->users()->attach($viewer->id, ['role' => Workspace::ROLE_VIEWER]);
+
+        expect($workspace->isOwner($owner))->toBeTrue();
+        expect($workspace->isOwner($viewer))->toBeFalse();
+        expect($workspace->isViewer($viewer))->toBeTrue();
+        expect($workspace->isViewer($owner))->toBeFalse();
+    });
+
+    it('allows owner/admin/member to edit content but not viewers or non-members', function () {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create();
+        $member = User::factory()->create();
+        $viewer = User::factory()->create();
+        $stranger = User::factory()->create();
+        $workspace = $owner->currentWorkspace();
+
+        $workspace->users()->attach($admin->id, ['role' => Workspace::ROLE_ADMIN]);
+        $workspace->users()->attach($member->id, ['role' => Workspace::ROLE_MEMBER]);
+        $workspace->users()->attach($viewer->id, ['role' => Workspace::ROLE_VIEWER]);
+
+        expect($workspace->canEditContent($owner))->toBeTrue();
+        expect($workspace->canEditContent($admin))->toBeTrue();
+        expect($workspace->canEditContent($member))->toBeTrue();
+        expect($workspace->canEditContent($viewer))->toBeFalse();
+        expect($workspace->canEditContent($stranger))->toBeFalse();
+    });
+});
+
+describe('Workspace::canChangeMember', function () {
+    it('lets a manager change a non-owner member but never the owner, even by themselves', function () {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create();
+        $member = User::factory()->create();
+        $workspace = $owner->currentWorkspace();
+
+        $workspace->users()->attach($admin->id, ['role' => Workspace::ROLE_ADMIN]);
+        $workspace->users()->attach($member->id, ['role' => Workspace::ROLE_MEMBER]);
+
+        expect($workspace->canChangeMember($owner, $member))->toBeTrue();
+        expect($workspace->canChangeMember($admin, $member))->toBeTrue();
+        expect($workspace->canChangeMember($member, $member))->toBeFalse(); // member can't manage anyone
+        expect($workspace->canChangeMember($owner, $owner))->toBeFalse(); // owner role is untouchable
+        expect($workspace->canChangeMember($admin, $owner))->toBeFalse();
+    });
+});

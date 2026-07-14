@@ -256,3 +256,31 @@ Notes:
 
 - **Known gap, by design for this iteration**: `currentWorkspace()` always resolves to the user's own workspace, so a user who is a `member`/`viewer` of someone else's workspace has no way to reach that workspace's `/team` page yet — there's no workspace switcher. This only matters once someone actually accepts an invite into a second workspace; a real multi-workspace switcher is a natural follow-up once Milestone 2's remaining items (permission checks, member management UI) land, but isn't itself a checklist item, so it's being flagged rather than built speculatively.
 - The `/team` page's member list and pending-invitations list are read-only beyond sending new invites — remove/change-role/resend actions are the "Member management UI" checklist item, done separately next.
+
+## 2026-07-14 - Iteration 9 (Milestone 2)
+
+Implemented item:
+
+- Roles: Admin / Member / Viewer
+
+Changes made:
+
+- The role *values* and assignment already existed (previous two iterations: `Workspace::ROLE_*` constants, invite role picker, `canManageMembers()`). This iteration adds the rest of the semantic permission layer that Milestone 2's remaining items build on:
+    - `Workspace::isOwner(User $user): bool`
+    - `Workspace::isViewer(User $user): bool`
+    - `Workspace::canEditContent(User $user): bool` — true for owner/admin/member, false for viewer or non-members. This is the check "Permission checks on board/card actions per role" (the next item) will wire into board/column/card mutations.
+    - `Workspace::canChangeMember(User $actor, User $target): bool` — governs member management (remove/change-role): the owner's own membership is never changeable through this path (by anyone, including themselves) so a workspace can never end up without an owner; otherwise gated by `canManageMembers($actor)`.
+- No UI changes in this iteration — these are pure model-layer capability checks with no consumer yet.
+
+Tests added/updated:
+
+- New tests in `tests/Feature/WorkspacesTest.php`: `isOwner`/`isViewer` correctness, `canEditContent` across all four roles + a non-member stranger, and `canChangeMember` covering "manager can change a non-owner", "member can't manage anyone", and "the owner role is untouchable by anyone including the owner."
+
+Validation:
+
+- Full suite: passing (121/121)
+- Pint (dirty): passing
+
+Notes:
+
+- This iteration is intentionally backend-only. `canEditContent` isn't enforced anywhere yet — that's the next iteration ("Permission checks on board/card actions per role"), and `canChangeMember` isn't consumed yet either — that's "Member management UI" after it.
