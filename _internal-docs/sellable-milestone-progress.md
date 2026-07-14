@@ -464,3 +464,36 @@ Validation:
 Notes:
 
 - This iteration is a second concrete example (after the activity-feed `describe()` crash last iteration) of the manual-verification step catching a bug automated tests didn't — this time because the crash depended on ambient session state that a clean `RefreshDatabase` test never reproduces on its own.
+
+## 2026-07-14 - Iteration 16 (Milestone 3)
+
+Implemented items:
+
+- Guided setup wizard (create first board, invite team, optional)
+- Onboarding checklist widget inside the app ("connect Slack," "invite a teammate," etc.)
+
+Changes made:
+
+- Merged these two checklist items into one implementation rather than building two overlapping UI surfaces. A "guided setup wizard" and an "onboarding checklist widget" would otherwise both be answering the same question ("what should I do next?") with the same underlying actions (create a board, invite a teammate) — a persistent, always-visible, optional/dismissible checklist covers both asks without redundant modal-wizard scaffolding on top.
+- Migration `add_onboarding_dismissed_at_to_users_table`: nullable `onboarding_dismissed_at` timestamp on `users`.
+- New Volt component `resources/views/livewire/onboarding/checklist.blade.php`: three steps computed live from real data (no separate "completed steps" table to keep in sync) —
+    - "Create your first board" — done once `boards()->count() > 1` (i.e. a board beyond the auto-seeded demo board).
+    - "Invite a teammate" — done once the current workspace has more than one member.
+    - "Add a profile photo" — done once `avatar_path` is set.
+    - Progress bar + checkmarks, each incomplete step links straight to where to do it (home/team/profile). `dismiss()` sets `onboarding_dismissed_at`; the widget also **auto-hides once every step is complete**, so a genuinely onboarded user isn't stuck with a dismiss button they never needed.
+- Wired into `boards.index` (the home page), above the create-board form.
+- Hit and fixed a Livewire gotcha: the component's entire template was originally wrapped in a single `@if ($this->shouldShow) ... @endif` with nothing else — when `false`, that renders **zero** root elements, and Livewire requires exactly one root element per component to attach `wire:id` etc. to. This threw "Invalid Livewire child tag name" from `SupportNestingComponents` the moment the widget was nested inside `boards.index` (5 existing tests broke, none related to onboarding). Fixed by wrapping the whole template in a permanent outer `<div>` and moving the `@if` inside it.
+
+Tests added/updated:
+
+- New `tests/Feature/OnboardingChecklistTest.php` (6 tests): shows with all 3 steps incomplete for a new user, "create first board" flips to done only once a board beyond the demo exists, "invite a teammate" flips once the workspace has 2+ members, "add a profile photo" flips once `avatar_path` is set, dismiss hides it and persists `onboarding_dismissed_at`, and it auto-hides once all 3 steps are complete without any dismiss action.
+
+Validation:
+
+- Full suite: passing (169/169)
+- Pint (dirty): passing
+- Manual browser check: created a user with a demo board via `tinker`, logged in through the real UI, confirmed the widget renders above "My Boards" showing "0 of 3 complete" with working links to each destination, clicked "Dismiss," and confirmed it disappeared without a page reload. Test user cleaned up afterward.
+
+Notes:
+
+- Two Milestone 3 checklist items are marked done from this one iteration since they were genuinely the same feature under two names — flagging this explicitly rather than silently checking off two boxes for one PR-sized change.

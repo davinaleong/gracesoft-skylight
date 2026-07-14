@@ -61,6 +61,8 @@ new class extends Component {
         </button>
     </div>
 
+    <livewire:onboarding.checklist />
+
     @if ($showCreateForm)
         <div class="mb-6 rounded-xl bg-white dark:bg-gray-900 p-5 shadow-sm ring-1 ring-gray-200 dark:ring-gray-800">
             <h2 class="mb-4 text-base font-semibold">Create a new board</h2>

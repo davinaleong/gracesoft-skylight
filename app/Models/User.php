@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
-#[Fillable(['name', 'email', 'password', 'oauth_provider', 'oauth_provider_id', 'avatar_path'])]
+#[Fillable(['name', 'email', 'password', 'oauth_provider', 'oauth_provider_id', 'avatar_path', 'onboarding_dismissed_at'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable implements MustVerifyEmailContract
 {
@@ -58,6 +58,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return [
             'email_verified_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
+            'onboarding_dismissed_at' => 'datetime',
             'password' => 'hashed',
             'notification_preferences' => 'array',
         ];
