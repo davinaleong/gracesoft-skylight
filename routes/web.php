@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\SocialiteController;
+use App\Http\Controllers\WorkspaceInviteController;
 use App\Models\Board;
 use App\Models\BoardShareLink;
 use App\Models\ShareLinkAccess;
@@ -34,7 +35,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         return view('boards.show', ['board' => $board]);
     })->name('boards.show');
+
+    Route::get('/team', fn () => view('workspaces.team'))->name('team');
 });
+
+Route::get('/invites/{token}', [WorkspaceInviteController::class, 'show'])->name('invites.show');
+Route::post('/invites/{token}/accept', [WorkspaceInviteController::class, 'accept'])
+    ->middleware(['auth'])
+    ->name('invites.accept');
 
 // Public read-only board viewer — rate-limited, noindex
 Route::middleware(['throttle:viewer'])->group(function () {

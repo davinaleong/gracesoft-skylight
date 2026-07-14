@@ -79,6 +79,22 @@ class Workspace extends Model
         return $this->users()->whereKey($user->id)->exists();
     }
 
+    /**
+     * The member's role in this workspace, or null if they aren't a member.
+     */
+    public function roleOf(User $user): ?string
+    {
+        return $this->users()->whereKey($user->id)->first()?->pivot->role;
+    }
+
+    /**
+     * Owners and admins can invite/remove members and change roles.
+     */
+    public function canManageMembers(User $user): bool
+    {
+        return in_array($this->roleOf($user), [self::ROLE_OWNER, self::ROLE_ADMIN], true);
+    }
+
     public function boards(): HasMany
     {
         return $this->hasMany(Board::class);
@@ -87,5 +103,10 @@ class Workspace extends Model
     public function tags(): HasMany
     {
         return $this->hasMany(Tag::class);
+    }
+
+    public function invites(): HasMany
+    {
+        return $this->hasMany(WorkspaceInvite::class);
     }
 }

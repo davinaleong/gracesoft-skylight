@@ -221,3 +221,38 @@ Validation:
 Notes:
 
 - **Milestone 1 — Self-Serve Foundation is now fully complete.** All 7 items checked off: public signup, OAuth signup (Google/GitHub, pending real credentials), workspace/tenant model, workspace_id data scoping, and this account settings page.
+
+## 2026-07-14 - Iteration 8 (Milestone 2)
+
+Implemented item:
+
+- Team invite by email
+
+Changes made:
+
+- Migration `create_workspace_invites_table`: `workspace_id` (FK, cascade), `email`, `role`, `token_hash` (unique, SHA-256 — never stored raw, same pattern as `BoardShareLink`), `invited_by` (FK to `users`, null-on-delete), `accepted_at`, `expires_at` (default 7 days out), unique on `[workspace_id, email]` so re-inviting the same address updates the existing row instead of erroring.
+- `WorkspaceInvite` model: `INVITABLE_ROLES` (`admin`/`member`/`viewer` — ownership is never granted via invite), `generateToken()`/`findByToken()` mirroring `BoardShareLink`, `isAccepted()`/`isExpired()`/`isPending()`, and `accept(User $user)` which attaches the user to the workspace with the invited role and marks the invite accepted inside a `DB::transaction`.
+- `Workspace` model: added `roleOf(User $user): ?string` and `canManageMembers(User $user): bool` (true for `owner`/`admin`), plus an `invites()` `HasMany`.
+- `User` model: added `currentWorkspace(): ?Workspace` — resolves to the user's earliest-joined workspace, i.e. **always their own owned workspace today**. This is a known, deliberate limitation until a workspace switcher exists (not in Milestone 2's scope) — see Notes.
+- New `App\Notifications\Workspace\WorkspaceInvitationNotification` (queued, mail-only), sent via `Notification::route('mail', $email)->notify(...)` since the invitee may not have a `User` row yet.
+- New `App\Http\Controllers\WorkspaceInviteController`: `show()` (public — renders the invite for guest or authenticated viewers) and `accept()` (auth-required, verifies the logged-in email matches the invite email case-insensitively, 403s on mismatch, 410s on expired/already-accepted).
+- New routes: `GET /invites/{token}` (`invites.show`), `POST /invites/{token}/accept` (`invites.accept`), and `GET /team` (`team`) behind `auth`+`verified`.
+- New page `resources/views/workspaces/team.blade.php` + Volt component `resources/views/livewire/workspaces/team.blade.php`: lists current members (name/email/role) for everyone, and — only for owners/admins — an invite form (email + role select) and a pending-invitations list with pending/expired status badges.
+- New view `resources/views/invites/show.blade.php`: shows workspace/inviter/role; guests get "Create an account" / "Sign in" links (both now accept `?email=` to prefill, added to `auth.login`/`auth.register`); authenticated users with a matching email get an "Accept invitation" button; authenticated users with a different email get an explicit mismatch warning + sign-out button; already-accepted/expired invites get a clear status message instead of a broken form.
+- Added a "Team" link to the main app nav (`components/layouts/app.blade.php`), next to the profile link.
+
+Tests added/updated:
+
+- New `tests/Feature/WorkspaceInvitesTest.php` (10 tests): owner can invite by email (notification dispatched via `Notification::assertSentOnDemand`), invalid role rejected, inviting an existing member rejected, re-inviting the same email refreshes the row instead of erroring, guest sees the invite with sign-up/sign-in links, a matching authenticated user can accept (workspace membership + role + `accepted_at` all verified), a mismatched email is refused (403), an expired invite is refused (410), and an unknown token 404s.
+- New tests in `tests/Feature/WorkspacesTest.php`: `Workspace::roleOf()`/`canManageMembers()` correctness across all four roles (owner/admin can manage, member/viewer/stranger cannot).
+
+Validation:
+
+- Full suite: passing (118/118)
+- Pint (dirty): passing
+- Manual browser check: logged in as a real user, opened `/team`, sent a live invite through the UI (email + role dropdown), confirmed the pending-invitations list updated immediately with the correct role and "Pending" badge, and confirmed via `tinker` that the invite row and a queued notification job were both created correctly. Test user/invite cleaned up afterward.
+
+Notes:
+
+- **Known gap, by design for this iteration**: `currentWorkspace()` always resolves to the user's own workspace, so a user who is a `member`/`viewer` of someone else's workspace has no way to reach that workspace's `/team` page yet — there's no workspace switcher. This only matters once someone actually accepts an invite into a second workspace; a real multi-workspace switcher is a natural follow-up once Milestone 2's remaining items (permission checks, member management UI) land, but isn't itself a checklist item, so it's being flagged rather than built speculatively.
+- The `/team` page's member list and pending-invitations list are read-only beyond sending new invites — remove/change-role/resend actions are the "Member management UI" checklist item, done separately next.

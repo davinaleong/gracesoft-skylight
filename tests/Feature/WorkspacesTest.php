@@ -124,3 +124,30 @@ describe('Workspace::hasMember', function () {
         expect($workspace->hasMember($stranger))->toBeFalse();
     });
 });
+
+describe('Workspace::roleOf and canManageMembers', function () {
+    it('reports the correct role per member and gates manage permission to owner/admin', function () {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create();
+        $member = User::factory()->create();
+        $viewer = User::factory()->create();
+        $stranger = User::factory()->create();
+        $workspace = $owner->currentWorkspace();
+
+        $workspace->users()->attach($admin->id, ['role' => Workspace::ROLE_ADMIN]);
+        $workspace->users()->attach($member->id, ['role' => Workspace::ROLE_MEMBER]);
+        $workspace->users()->attach($viewer->id, ['role' => Workspace::ROLE_VIEWER]);
+
+        expect($workspace->roleOf($owner))->toBe(Workspace::ROLE_OWNER);
+        expect($workspace->roleOf($admin))->toBe(Workspace::ROLE_ADMIN);
+        expect($workspace->roleOf($member))->toBe(Workspace::ROLE_MEMBER);
+        expect($workspace->roleOf($viewer))->toBe(Workspace::ROLE_VIEWER);
+        expect($workspace->roleOf($stranger))->toBeNull();
+
+        expect($workspace->canManageMembers($owner))->toBeTrue();
+        expect($workspace->canManageMembers($admin))->toBeTrue();
+        expect($workspace->canManageMembers($member))->toBeFalse();
+        expect($workspace->canManageMembers($viewer))->toBeFalse();
+        expect($workspace->canManageMembers($stranger))->toBeFalse();
+    });
+});

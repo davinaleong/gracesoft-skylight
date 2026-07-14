@@ -39,6 +39,15 @@ class User extends Authenticatable implements MustVerifyEmailContract
     }
 
     /**
+     * Every user has exactly one workspace today (their personal one, created
+     * on signup). This is the single seam multi-workspace support will widen later.
+     */
+    public function currentWorkspace(): ?Workspace
+    {
+        return $this->workspaces()->orderBy('workspace_user.created_at')->first();
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

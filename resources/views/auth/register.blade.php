@@ -31,7 +31,7 @@
                 id="email"
                 type="email"
                 name="email"
-                value="{{ old('email') }}"
+                value="{{ old('email', request('email')) }}"
                 required
                 autocomplete="username"
                 class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3.5 py-2.5 text-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 @error('email') border-red-500 @enderror"
