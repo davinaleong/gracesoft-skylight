@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\AuthorizesWorkspaceEditing;
 use App\Models\Board;
 use App\Models\BoardShareLink;
 use App\Notifications\Board\ShareLinkCreatedNotification;
@@ -9,6 +10,8 @@ use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    use AuthorizesWorkspaceEditing;
+
     public Board $board;
 
     public bool $canSeeComments = false;
@@ -28,6 +31,8 @@ new class extends Component {
 
     public function generate(): void
     {
+        $this->authorizeEdit($this->board);
+
         ['token' => $token, 'hash' => $hash] = BoardShareLink::generateToken();
 
         $this->board->shareLinks()->create([
@@ -52,6 +57,8 @@ new class extends Component {
 
     public function revoke(int $linkId): void
     {
+        $this->authorizeEdit($this->board);
+
         $link = $this->board->shareLinks()->findOrFail($linkId);
         $link->update(['revoked_at' => now()]);
 

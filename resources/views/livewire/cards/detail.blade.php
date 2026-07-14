@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\AuthorizesWorkspaceEditing;
 use App\Models\Attachment;
 use App\Models\Card;
 use App\Models\Checklist;
@@ -13,7 +14,7 @@ use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 
 new class extends Component {
-    use WithFileUploads;
+    use AuthorizesWorkspaceEditing, WithFileUploads;
 
     public Card $card;
 
@@ -60,6 +61,8 @@ new class extends Component {
 
     public function saveDates(): void
     {
+        $this->authorizeEdit($this->card);
+
         $this->validate([
             'startsAt' => ['nullable', 'date'],
             'endsAt' => ['nullable', 'date', Rule::when($this->startsAt !== '', ['after_or_equal:startsAt'])],
@@ -75,6 +78,8 @@ new class extends Component {
 
     public function createChecklist(): void
     {
+        $this->authorizeEdit($this->card);
+
         $this->validate(['newChecklistName' => ['required', 'string', 'max:255']]);
 
         $this->card->checklists()->create(['name' => $this->newChecklistName]);
@@ -83,11 +88,15 @@ new class extends Component {
 
     public function deleteChecklist(int $checklistId): void
     {
+        $this->authorizeEdit($this->card);
+
         $this->card->checklists()->findOrFail($checklistId)->delete();
     }
 
     public function createItem(int $checklistId): void
     {
+        $this->authorizeEdit($this->card);
+
         $this->validate(['newItemBody' => ['required', 'string', 'max:255']]);
 
         $checklist = $this->card->checklists()->findOrFail($checklistId);
@@ -101,6 +110,8 @@ new class extends Component {
 
     public function toggleItem(int $itemId): void
     {
+        $this->authorizeEdit($this->card);
+
         $item = ChecklistItem::whereHas('checklist', fn ($q) => $q->where('card_id', $this->card->id))
             ->findOrFail($itemId);
 
@@ -109,6 +120,8 @@ new class extends Component {
 
     public function deleteItem(int $itemId): void
     {
+        $this->authorizeEdit($this->card);
+
         ChecklistItem::whereHas('checklist', fn ($q) => $q->where('card_id', $this->card->id))
             ->findOrFail($itemId)
             ->delete();
@@ -122,6 +135,8 @@ new class extends Component {
 
     public function addComment(): void
     {
+        $this->authorizeEdit($this->card);
+
         $this->validate(['newCommentBody' => ['required', 'string', 'max:2000']]);
 
         $this->card->comments()->create([
@@ -134,6 +149,8 @@ new class extends Component {
 
     public function deleteComment(int $commentId): void
     {
+        $this->authorizeEdit($this->card);
+
         $this->card->comments()
             ->where('user_id', auth()->id())
             ->findOrFail($commentId)
@@ -156,6 +173,8 @@ new class extends Component {
 
     public function uploadImage(): void
     {
+        $this->authorizeEdit($this->card);
+
         $this->validate([
             'imageUpload' => ['required', 'image', 'max:10240'], // 10 MB
         ]);
@@ -176,6 +195,8 @@ new class extends Component {
 
     public function addLink(): void
     {
+        $this->authorizeEdit($this->card);
+
         $this->validate([
             'linkUrl' => ['required', 'url', 'max:2048'],
             'linkName' => ['nullable', 'string', 'max:255'],
@@ -193,6 +214,8 @@ new class extends Component {
 
     public function deleteAttachment(int $attachmentId): void
     {
+        $this->authorizeEdit($this->card);
+
         $attachment = $this->card->attachments()
             ->where('user_id', auth()->id())
             ->findOrFail($attachmentId);
@@ -207,6 +230,8 @@ new class extends Component {
 
     public function saveNote(): void
     {
+        $this->authorizeEdit($this->card);
+
         $this->validate([
             'noteName' => ['required', 'string', 'max:255'],
             'noteContent' => ['required', 'string'],
@@ -230,6 +255,8 @@ new class extends Component {
 
     public function editNote(int $noteId): void
     {
+        $this->authorizeEdit($this->card);
+
         $note = $this->card->markdownNotes()
             ->where('user_id', auth()->id())
             ->findOrFail($noteId);
@@ -242,6 +269,8 @@ new class extends Component {
 
     public function deleteNote(int $noteId): void
     {
+        $this->authorizeEdit($this->card);
+
         $this->card->markdownNotes()
             ->where('user_id', auth()->id())
             ->findOrFail($noteId)

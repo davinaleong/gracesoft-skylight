@@ -1,10 +1,13 @@
 ﻿<?php
 
+use App\Concerns\AuthorizesWorkspaceEditing;
 use App\Models\Board;
 use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    use AuthorizesWorkspaceEditing;
+
     public bool $showCreateForm = false;
     public string $name = '';
     public string $description = '';
@@ -17,6 +20,8 @@ new class extends Component {
 
     public function create(): void
     {
+        abort_unless(auth()->user()->currentWorkspace()?->canEditContent(auth()->user()), 403);
+
         $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
@@ -33,7 +38,11 @@ new class extends Component {
 
     public function delete(int $boardId): void
     {
-        auth()->user()->boards()->findOrFail($boardId)->delete();
+        $board = auth()->user()->boards()->findOrFail($boardId);
+
+        $this->authorizeEdit($board);
+
+        $board->delete();
     }
 };
 ?>

@@ -284,3 +284,34 @@ Validation:
 Notes:
 
 - This iteration is intentionally backend-only. `canEditContent` isn't enforced anywhere yet — that's the next iteration ("Permission checks on board/card actions per role"), and `canChangeMember` isn't consumed yet either — that's "Member management UI" after it.
+
+## 2026-07-14 - Iteration 10 (Milestone 2)
+
+Implemented item:
+
+- Permission checks on board/card actions per role
+
+Changes made:
+
+- New `App\Concerns\AuthorizesWorkspaceEditing` trait: one `authorizeEdit(Board|Column|Card $model)` method that resolves the model's workspace (`$model->workspace` for a Board, `$model->board->workspace` for a Column, `$model->column->board->workspace` for a Card) and `abort_unless(...canEditContent(auth()->user()), 403)`. No new relations needed on `Column`/`Card` — it just walks the existing ones.
+- Wired `authorizeEdit()` into every mutating method across the board/card Volt components:
+    - `boards.index`: `create()` (checks `currentWorkspace()->canEditContent()` directly since no `Board` exists yet at that point), `delete()`.
+    - `boards.show`: `createColumn`, `deleteColumn`, `createCard`, `deleteCard`, `startEditCard`, `saveCard`, `updateColumnOrder`, `updateCardOrder`, `moveCard`, `createLabel`, `deleteLabel`, `toggleCardLabel`.
+    - `boards.share-links`: `generate`, `revoke` — sharing is treated as a content-edit action, so members can do it too, not just owner/admin.
+    - `cards.detail`: `saveDates`, `createChecklist`, `deleteChecklist`, `createItem`, `toggleItem`, `deleteItem`, `addComment`, `deleteComment`, `uploadImage`, `addLink`, `deleteAttachment`, `saveNote`, `editNote`, `deleteNote`.
+- Deliberately uniform: a `viewer` is blocked from *every* mutation, including deleting their own old comment/attachment/note from before a role downgrade — "viewer" means strictly read-only, no exceptions carved out for pre-existing authorship.
+- Read paths are untouched: `/boards/{board}` still only checks `workspace->hasMember()` (any role, including viewer, can view), and all `#[Computed]` methods are unaffected.
+
+Tests added/updated:
+
+- New `tests/Feature/WorkspacePermissionsTest.php` (7 tests): a viewer can view a board but can't create a column/card/comment/checklist-toggle/share-link, a viewer can't edit content in a workspace they don't own (model-level, since `boards.index` always operates on the acting user's own workspace — same known gap as the invites iteration), and a member can create content but still can't manage members.
+
+Validation:
+
+- Full suite: passing (128/128)
+- Pint (dirty): passing
+- Manual browser check: created an owner + viewer (attached via `workspace_user` pivot with role `viewer`) via `tinker`, logged in as the viewer, loaded the owner's board directly by UUID, confirmed it renders (read access works) with no console errors.
+
+Notes:
+
+- **Known UI gap, flagged not fixed here**: edit/delete/add buttons (Add column, Delete column, Add card, Share, Labels, etc.) are still visible to viewers in the UI — clicking them still works up to the point of calling the guarded method, which then 403s. Livewire's default behavior on an uncaught 403 during a component call is to show its built-in error dialog, which isn't catastrophic but isn't polished either. Hiding/disabling these controls client-side for viewers is real work across two large Blade files (`boards/show.blade.php`, `cards/detail.blade.php`) and reads more like Milestone 4 (Core UX Polish) than a security requirement — the actual security boundary (server-side authorization) is now solid regardless of what the UI shows.

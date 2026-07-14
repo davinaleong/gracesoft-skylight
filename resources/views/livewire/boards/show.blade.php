@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\AuthorizesWorkspaceEditing;
 use App\Models\Board;
 use App\Models\Card;
 use App\Models\Label;
@@ -8,6 +9,8 @@ use Livewire\Volt\Component;
 
 new class extends Component
 {
+    use AuthorizesWorkspaceEditing;
+
     public Board $board;
 
     public bool $showColumnForm = false;
@@ -50,6 +53,8 @@ new class extends Component
 
     public function createColumn(): void
     {
+        $this->authorizeEdit($this->board);
+
         $this->validate(
             ['newColumnName' => ['required', 'string', 'max:255']],
             attributes: ['newColumnName' => 'column name']
@@ -65,11 +70,15 @@ new class extends Component
 
     public function deleteColumn(int $columnId): void
     {
+        $this->authorizeEdit($this->board);
+
         $this->board->columns()->findOrFail($columnId)->delete();
     }
 
     public function createCard(int $columnId): void
     {
+        $this->authorizeEdit($this->board);
+
         $this->validate(
             ['newCardTitle' => ['required', 'string', 'max:255']],
             attributes: ['newCardTitle' => 'card title']
@@ -86,6 +95,8 @@ new class extends Component
 
     public function deleteCard(int $cardId): void
     {
+        $this->authorizeEdit($this->board);
+
         Card::whereHas('column', fn ($q) => $q->where('board_id', $this->board->id))
             ->findOrFail($cardId)
             ->delete();
@@ -93,6 +104,8 @@ new class extends Component
 
     public function startEditCard(int $cardId): void
     {
+        $this->authorizeEdit($this->board);
+
         $card = Card::whereHas('column', fn ($q) => $q->where('board_id', $this->board->id))
             ->findOrFail($cardId);
 
@@ -106,6 +119,8 @@ new class extends Component
 
     public function saveCard(): void
     {
+        $this->authorizeEdit($this->board);
+
         $this->validate([
             'editCardTitle' => ['required', 'string', 'max:255'],
             'editCardDescription' => ['nullable', 'string'],
@@ -129,6 +144,8 @@ new class extends Component
 
     public function updateColumnOrder(array $orderedIds): void
     {
+        $this->authorizeEdit($this->board);
+
         foreach ($orderedIds as $position => $id) {
             $this->board->columns()->where('id', $id)->update(['position' => $position]);
         }
@@ -136,6 +153,8 @@ new class extends Component
 
     public function updateCardOrder(int $columnId, array $orderedIds): void
     {
+        $this->authorizeEdit($this->board);
+
         $column = $this->board->columns()->findOrFail($columnId);
         foreach ($orderedIds as $position => $id) {
             $column->cards()->where('id', $id)->update(['position' => $position, 'column_id' => $columnId]);
@@ -144,6 +163,8 @@ new class extends Component
 
     public function moveCard(int $cardId, int $toColumnId, int $position): void
     {
+        $this->authorizeEdit($this->board);
+
         Card::whereHas('column', fn ($q) => $q->where('board_id', $this->board->id))
             ->findOrFail($cardId)
             ->update(['column_id' => $toColumnId, 'position' => $position]);
@@ -151,6 +172,8 @@ new class extends Component
 
     public function createLabel(): void
     {
+        $this->authorizeEdit($this->board);
+
         $this->validate([
             'newLabelName' => ['required', 'string', 'max:255'],
             'newLabelColor' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
@@ -167,11 +190,15 @@ new class extends Component
 
     public function deleteLabel(int $labelId): void
     {
+        $this->authorizeEdit($this->board);
+
         $this->board->labels()->findOrFail($labelId)->delete();
     }
 
     public function toggleCardLabel(int $cardId, int $labelId): void
     {
+        $this->authorizeEdit($this->board);
+
         $card = Card::whereHas('column', fn ($q) => $q->where('board_id', $this->board->id))
             ->findOrFail($cardId);
 
