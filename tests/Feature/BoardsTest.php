@@ -57,6 +57,15 @@ describe('boards index', function () {
 
         $this->assertModelMissing($board);
     });
+
+    it('shows an empty state with a create-board CTA when there are no boards', function () {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Volt::test('boards.index')
+            ->assertSee('No boards yet')
+            ->assertSee('Create a board');
+    });
 });
 
 describe('boards show', function () {
@@ -78,6 +87,27 @@ describe('boards show', function () {
         $this->actingAs($other)
             ->get(route('boards.show', $board))
             ->assertForbidden();
+    });
+
+    it('shows an empty state with an add-column CTA when the board has no columns', function () {
+        $user = User::factory()->create();
+        $board = Board::factory()->create(['user_id' => $user->id]);
+        $this->actingAs($user);
+
+        Volt::test('boards.show', ['board' => $board])
+            ->assertSee('No columns yet')
+            ->assertSee('Add a column');
+    });
+
+    it('shows a no-cards message inside an empty column', function () {
+        $user = User::factory()->create();
+        $board = Board::factory()->create(['user_id' => $user->id]);
+        Column::factory()->create(['board_id' => $board->id, 'name' => 'To Do']);
+        $this->actingAs($user);
+
+        Volt::test('boards.show', ['board' => $board])
+            ->assertSee('No cards yet.')
+            ->assertDontSee('No columns yet');
     });
 
     it('creates a column', function () {

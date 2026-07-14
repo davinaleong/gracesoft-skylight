@@ -497,3 +497,32 @@ Validation:
 Notes:
 
 - Two Milestone 3 checklist items are marked done from this one iteration since they were genuinely the same feature under two names — flagging this explicitly rather than silently checking off two boxes for one PR-sized change.
+
+## 2026-07-14 - Iteration 17 (Milestone 3)
+
+Implemented item:
+
+- Empty states with clear CTAs (no boards, no cards, no comments yet)
+
+Changes made:
+
+- Audited every collection-rendering view in the app for empty-state handling (boards list, columns, cards, checklists, checklist items, comments, attachments, markdown notes, share links, team members, pending invites, notifications, search results, activity feed). Scoped this iteration to the three cases the checklist item names explicitly plus the one directly adjacent gap that made them incomplete without it:
+    - `boards/index.blade.php`: the "No boards yet" empty state already had a message but no button — added a "Create a board" CTA button inside the empty-state block itself (opens the create form).
+    - `boards/show.blade.php`: boards with zero columns previously rendered **nothing** in the canvas (no `@empty`/`@else` existed at all) — added a full empty state ("No columns yet" + "Add a column" button), shown only when the create-column form isn't already open.
+    - `boards/show.blade.php`: individual columns with zero cards also had no empty-state handling — added a small "No cards yet." placeholder inside the card list (the "Add card" affordance is already always visible directly below, so no duplicate button needed here).
+    - Comments already had a message-only empty state ("No comments yet.") with the comment form directly above it — left as-is, consistent with the same pattern already used for notifications and the activity feed.
+- Deliberately did **not** touch checklists, checklist items, attachments, markdown notes, board labels, share links, or pending invites in this pass — all of those already have an always-visible create form/button directly adjacent to the empty collection, so the missing piece is a "no X yet" message rather than a missing CTA (lower priority, and expanding scope to all of them risked turning one checklist item into a much larger UI-polish pass better suited to Milestone 4).
+
+Tests added/updated:
+
+- `tests/Feature/BoardsTest.php`: 3 new tests — boards-index empty state shows "No boards yet" + "Create a board", board-show empty state shows "No columns yet" + "Add a column", and an empty column (board has columns, but this one has no cards) shows "No cards yet." without also showing the board-level empty state.
+
+Validation:
+
+- Full suite: passing (172/172)
+- Pint (dirty): passing
+- Manual browser check: created a board with zero columns via `tinker`, logged in, loaded the board directly by UUID, and confirmed the "No columns yet" / "Add a column" empty state renders correctly in the real UI.
+
+Notes:
+
+- Milestone 3 now has 3 of 5 items done (demo board, guided-wizard/checklist-widget combined, and this). Remaining: board templates, and this session hasn't yet done a fourth manual-verification pass to confirm the boards-index "no boards" CTA renders in a live browser (it's covered by an automated Pest assertion, which is sufficient given the pattern is identical to the columns CTA already verified live).

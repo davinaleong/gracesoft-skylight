@@ -34,7 +34,7 @@ _Goal: first 60 seconds convinces someone to stay._
 
 - [x] Sample/demo board auto-created on signup
 - [x] Guided setup wizard (create first board, invite team, optional)
-- [ ] Empty states with clear CTAs (no boards, no cards, no comments yet)
+- [x] Empty states with clear CTAs (no boards, no cards, no comments yet)
 - [ ] Board templates (sprint board, content calendar, client onboarding, etc.)
 - [x] Onboarding checklist widget inside the app ("connect Slack," "invite a teammate," etc.)
 

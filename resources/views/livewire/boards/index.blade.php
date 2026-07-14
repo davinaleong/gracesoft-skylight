@@ -95,6 +95,15 @@ new class extends Component {
             </svg>
             <p class="text-gray-600 dark:text-gray-400 font-medium">No boards yet</p>
             <p class="mt-1 text-sm text-gray-500">Create your first board to get started.</p>
+            <button
+                wire:click="$set('showCreateForm', true)"
+                class="mt-4 inline-flex items-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-medium text-white shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Create a board
+            </button>
         </div>
     @else
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

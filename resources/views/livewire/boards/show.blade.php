@@ -351,6 +351,22 @@ new class extends Component
         x-init="initColumns()"
         wire:ignore.self
     >
+        @if ($boardColumns->isEmpty() && ! $showColumnForm)
+            <div class="w-full rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 p-16 text-center">
+                <p class="text-gray-600 dark:text-gray-400 font-medium">No columns yet</p>
+                <p class="mt-1 text-sm text-gray-500">Add a column to start organizing cards.</p>
+                <button
+                    wire:click="$set('showColumnForm', true)"
+                    class="mt-4 inline-flex items-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-medium text-white shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Add a column
+                </button>
+            </div>
+        @endif
+
         @foreach ($boardColumns as $column)
             <div
                 class="group/column shrink-0 w-72 flex flex-col rounded-xl bg-gray-100 dark:bg-gray-800/60"
@@ -385,6 +401,10 @@ new class extends Component
                     data-sortable-cards
                     data-column-id="{{ $column->id }}"
                 >
+                    @if ($column->cards->isEmpty())
+                        <p class="px-1 py-2 text-xs text-gray-400">No cards yet.</p>
+                    @endif
+
                     @foreach ($column->cards as $card)
                         <div
                             class="group/card rounded-lg p-3 shadow-xs ring-1 ring-gray-200 dark:ring-gray-700 {{ $card->color ? '' : 'bg-white dark:bg-gray-900' }}"
