@@ -99,7 +99,14 @@ GraceSoft Skylight is a Laravel + Livewire Kanban-style board application with:
 - Public read-only viewer route with token
 - Viewer route rate limit (30 requests/minute per IP)
 - Viewer responses include noindex, nofollow directives
-- Public viewer shows board columns/cards and optional comments
+- Public viewer shows board columns/cards with card color accents
+- Card click opens a read-only detail dialog in shared view
+- Shared dialog includes markdown-rendered card body
+- Shared dialog includes read-only start/due dates
+- Shared dialog includes read-only checklists (accordion)
+- Shared dialog includes read-only comments when enabled on share link
+- Shared dialog includes read-only attachments when enabled on share link
+- Shared dialog includes image lightbox for attachment previews
 
 ### 2.7 Security, Logging, and Notifications
 
@@ -460,7 +467,6 @@ This section lists all currently implemented project functions and methods in ap
 ## 7. Known Notes and Gaps
 
 - resources/views/livewire/boards/create-board-form.blade.php currently appears to be a placeholder and not an active feature surface.
-- Public viewer currently supports optional comment visibility; a can_see_attachments permission is stored on links but does not yet drive attachment display in the viewer template.
 
 ## 8. Suggested Maintenance Process
 

@@ -18,7 +18,8 @@ and notification tooling for security and reminders.
 
 - Auth flows: registration, login, password reset, profile update, password update, 2FA
 - Personal boards with columns, cards, checklists, comments, labels, and attachments
-- Public read-only board share links (`/view/{token}`)
+- Public read-only board share links (`/view/{token}`) with optional comments/attachments access
+- Shared-view card dialog with markdown body, read-only dates/checklists/comments, and attachment image lightbox
 - Activity and access logging for shared links
 - Notification email templates and test command
 - Due/overdue card reminder command with daily scheduler entry
