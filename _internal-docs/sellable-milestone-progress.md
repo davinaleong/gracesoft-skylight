@@ -122,3 +122,34 @@ Validation:
 Notes:
 
 - Real `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` and `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` values still need to be supplied by the project owner (OAuth apps registered in Google Cloud Console / GitHub Developer Settings) before this is usable in production — code is fully wired and tested against placeholders.
+
+## 2026-07-14 - Iteration 5 (Milestone 1)
+
+Implemented item:
+
+- Workspace/tenant model
+
+Changes made:
+
+- New `workspaces` table: `id`, `uuid` (unique, route-binding key — same pattern as `Board`), `owner_id` (FK to `users`, cascade delete), `name`, timestamps.
+- New `workspace_user` pivot table: `workspace_id`, `user_id` (both cascade delete), `role` (string, default `member`), timestamps, unique on `[workspace_id, user_id]`. Explicit table name required in both `BelongsToMany` relations since `User`/`Workspace` alphabetize to Eloquent's default `user_workspace`, which doesn't match.
+- New `Workspace` model: `ROLE_OWNER`/`ROLE_ADMIN`/`ROLE_MEMBER`/`ROLE_VIEWER` constants (only `owner` is actually assigned in this iteration; the rest exist so Milestone 2's invite/role UI doesn't need another migration), `owner()` belongsTo, `users()` belongsToMany with `role` pivot, and a `Workspace::createForUser(User $user, ?string $name)` static helper that creates the workspace + attaches the owner inside a DB transaction.
+- `User` model: added `workspaces()` belongsToMany relation.
+- Hooked workspace creation into both signup paths so every new account gets exactly one personal workspace:
+    - `App\Actions\Fortify\CreateNewUser`: wrapped `User::create` + `Workspace::createForUser` in one `DB::transaction`.
+    - `SocialiteController::findOrCreateUser`: same transaction wrapping in the "brand new OAuth user" branch only — the "link OAuth to an existing email/password account" branch deliberately does **not** create a second workspace.
+- New `WorkspaceFactory`.
+
+Tests added/updated:
+
+- New `tests/Feature/WorkspacesTest.php` (5 tests): workspace auto-created on email/password registration (correct owner, role, default name), workspace auto-created for a brand-new OAuth user, OAuth login that links to an existing account does *not* create a duplicate workspace, and two tests directly on `Workspace::createForUser` (uuid generated, pivot role correct, default name format).
+
+Validation:
+
+- Full suite: passing (97/97)
+- Pint (dirty): passing (auto-fixed a quote-style nit in `WorkspaceFactory`)
+
+Notes:
+
+- **Existing users created before this iteration have zero workspaces** — every board they own is still scoped only by `boards.user_id`. This is intentional and handled in the next iteration (Milestone 1: "Migrate existing single-user board data model to workspace_id scoping"), which adds `workspace_id` to `boards`/`tags` and backfills a personal workspace for every pre-existing user in the same migration.
+- Roles beyond `owner` (`admin`/`member`/`viewer`) are defined but unused until Milestone 2 builds invites and permission checks — flagging so it isn't mistaken for forgotten scope.
