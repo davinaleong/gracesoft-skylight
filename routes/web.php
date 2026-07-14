@@ -39,8 +39,21 @@ Route::middleware(['throttle:viewer'])->group(function () {
 
         ActivityLogger::log('share_link.accessed', $link->board, null, null);
 
+        $relations = [
+            'columns.cards.labels',
+            'columns.cards.checklists.items',
+        ];
+
+        if ($link->can_see_comments) {
+            $relations[] = 'columns.cards.comments.user';
+        }
+
+        if ($link->can_see_attachments) {
+            $relations[] = 'columns.cards.attachments';
+        }
+
         return response()
-            ->view('viewer.board', ['link' => $link, 'board' => $link->board->load('columns.cards')])
+            ->view('viewer.board', ['link' => $link, 'board' => $link->board->load($relations)])
             ->header('X-Robots-Tag', 'noindex, nofollow');
     })->name('viewer');
 });
