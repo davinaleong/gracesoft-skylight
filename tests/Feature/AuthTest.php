@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\URL;
 
 uses(RefreshDatabase::class);
 
@@ -12,7 +13,7 @@ describe('registration', function () {
             ->assertSee('Create your account');
     });
 
-    it('registers a new user and redirects to home', function () {
+    it('registers a new user and requires email verification before app access', function () {
         $response = $this->post(route('register'), [
             'name' => 'Test User',
             'email' => 'test@example.com',
@@ -22,7 +23,13 @@ describe('registration', function () {
 
         $response->assertRedirect(route('home'));
         $this->assertAuthenticated();
-        $this->assertDatabaseHas('users', ['email' => 'test@example.com']);
+        $this->assertDatabaseHas('users', [
+            'email' => 'test@example.com',
+            'email_verified_at' => null,
+        ]);
+
+        $this->get(route('home'))
+            ->assertRedirect(route('verification.notice'));
     });
 
     it('fails registration with mismatched passwords', function () {
@@ -98,8 +105,16 @@ describe('protected routes', function () {
             ->assertRedirect(route('login'));
     });
 
-    it('allows authenticated users to access home', function () {
-        $user = User::factory()->create();
+    it('redirects unverified users from home to email verification notice', function () {
+        $user = User::factory()->unverified()->create();
+
+        $this->actingAs($user)
+            ->get(route('home'))
+            ->assertRedirect(route('verification.notice'));
+    });
+
+    it('allows verified users to access home', function () {
+        $user = User::factory()->create(['email_verified_at' => now()]);
 
         $this->actingAs($user)
             ->get(route('home'))
@@ -114,5 +129,35 @@ describe('protected routes', function () {
             ->get(route('profile'))
             ->assertOk()
             ->assertSee('Profile settings');
+    });
+});
+
+describe('email verification', function () {
+    it('renders the verification notice for unverified users', function () {
+        $user = User::factory()->unverified()->create();
+
+        $this->actingAs($user)
+            ->get(route('verification.notice'))
+            ->assertOk()
+            ->assertSee('Verify your email');
+    });
+
+    it('verifies a user from a signed verification link', function () {
+        $user = User::factory()->unverified()->create();
+
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            [
+                'id' => $user->id,
+                'hash' => sha1($user->getEmailForVerification()),
+            ]
+        );
+
+        $this->actingAs($user)
+            ->get($verificationUrl)
+            ->assertRedirect(route('home').'?verified=1');
+
+        expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
     });
 });

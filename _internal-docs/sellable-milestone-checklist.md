@@ -10,7 +10,7 @@ _Goal: someone can sign up and use it without you creating their account._
 
 - [ ] Public signup flow (email/password)
 - [ ] OAuth signup (Google and/or GitHub)
-- [ ] Email verification flow
+- [x] Email verification flow
 - [ ] Password reset flow (confirm works end-to-end for self-serve users)
 - [ ] Workspace/tenant model — each account gets an isolated workspace
 - [ ] Migrate existing single-user board data model to `workspace_id` scoping

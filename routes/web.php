@@ -12,8 +12,11 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/home', fn () => view('home'))->name('home');
     Route::get('/profile', fn () => view('profile.index'))->name('profile');
+});
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/home', fn () => view('home'))->name('home');
 
     Route::get('/boards/{board}', function (Board $board) {
         abort_unless($board->user_id === auth()->id(), 403);
