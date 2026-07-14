@@ -315,3 +315,37 @@ Validation:
 Notes:
 
 - **Known UI gap, flagged not fixed here**: edit/delete/add buttons (Add column, Delete column, Add card, Share, Labels, etc.) are still visible to viewers in the UI — clicking them still works up to the point of calling the guarded method, which then 403s. Livewire's default behavior on an uncaught 403 during a component call is to show its built-in error dialog, which isn't catastrophic but isn't polished either. Hiding/disabling these controls client-side for viewers is real work across two large Blade files (`boards/show.blade.php`, `cards/detail.blade.php`) and reads more like Milestone 4 (Core UX Polish) than a security requirement — the actual security boundary (server-side authorization) is now solid regardless of what the UI shows.
+
+## 2026-07-14 - Iteration 11 (Milestone 2)
+
+Implemented item:
+
+- Member management UI (remove/re-invite/change role)
+
+Changes made:
+
+- **Fixed a real correctness bug surfaced while building this**: the `admin` role was previously unusable in practice, because `/team` was hard-locked to `auth()->user()->currentWorkspace()` (always the acting user's *own* workspace). An admin invited into someone else's workspace had no route to reach it, so they could never actually manage anyone. Fixed by:
+    - New route `GET /team/{workspace}` (`team.show`) alongside the existing `/team` (which now explicitly passes `auth()->user()->currentWorkspace()` as the default), both checking `$workspace->hasMember(auth()->user())`.
+    - `workspaces.team` Volt component: `workspace` changed from a `#[Computed]` property (always `currentWorkspace()`) to a real `mount(Workspace $workspace)` parameter, checked against `hasMember()`.
+    - New `otherWorkspaces` computed property + a "Switch workspace" link row at the top of `/team` whenever the acting user belongs to more than one workspace, so an admin invited elsewhere can actually get there.
+- `workspaces.team` component: four new methods —
+    - `changeRole(int $userId, string $newRole)`: validates the new role is invitable, gated by `Workspace::canChangeMember()` (so the owner's role can never be touched by anyone, including themselves).
+    - `removeMember(int $userId)`: same `canChangeMember()` gate, detaches from the `workspace_user` pivot.
+    - `resendInvite(int $inviteId)`: regenerates the token + pushes `expires_at` out another 7 days, re-sends `WorkspaceInvitationNotification`. Gated by `canManage`.
+    - `cancelInvite(int $inviteId)`: hard-deletes the pending invite row. Gated by `canManage`.
+- View updates: each member row now shows a role `<select>` + "Remove" button (via `wire:change`/`wire:click`) instead of a static role badge, but only when the acting user can manage that specific member (`canChangeMember` — so the owner's own row always stays a static badge, even to themselves). Pending invites gained "Resend" and "Cancel" buttons.
+
+Tests added/updated:
+
+- New `tests/Feature/WorkspaceMemberManagementTest.php` (9 tests): owner changes a member to admin, invalid role rejected (422), nobody can change the owner's own role (403, including the owner acting on themselves), a member can't change another member's role, an admin (not just the owner) can remove a member, the owner can't be removed, resending refreshes the token/expiry and re-sends the notification, cancelling deletes the invite row, and a member is forbidden from resending/cancelling.
+- Updated `tests/Feature/WorkspaceInvitesTest.php`: all `Volt::test('workspaces.team')` calls now pass the target workspace explicitly (required by the new `mount()` signature), and the "forbids a non-manager from inviting" test was upgraded from a model-only check to a real end-to-end component test now that the switcher fix makes that path reachable.
+
+Validation:
+
+- Full suite: passing (137/137)
+- Pint (dirty): passing
+- Manual browser check: created an owner + member via `tinker`, logged in as the owner, loaded `/team`, changed the member's role from Member to Admin via the dropdown, confirmed the flash message ("...role was updated to admin") and re-verified via `tinker` that the `workspace_user` pivot row was actually updated. Test users cleaned up afterward.
+
+Notes:
+
+- The workspace-switcher fix here is intentionally minimal (a links row, not a persistent nav-level switcher) — just enough to make the admin role and member-management actions actually reachable and testable. A first-class workspace switcher in the main app nav (for boards, not just `/team`) is a larger piece of UX that fits better under a future onboarding/UX milestone once multiple real workspaces per user are a common case.

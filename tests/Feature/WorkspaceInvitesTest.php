@@ -17,7 +17,7 @@ describe('sending invites', function () {
         $owner = User::factory()->create();
         $this->actingAs($owner);
 
-        Volt::test('workspaces.team')
+        Volt::test('workspaces.team', ['workspace' => $owner->currentWorkspace()])
             ->set('email', 'teammate@example.com')
             ->set('role', Workspace::ROLE_MEMBER)
             ->call('invite')
@@ -36,7 +36,7 @@ describe('sending invites', function () {
         $owner = User::factory()->create();
         $this->actingAs($owner);
 
-        Volt::test('workspaces.team')
+        Volt::test('workspaces.team', ['workspace' => $owner->currentWorkspace()])
             ->set('email', 'teammate@example.com')
             ->set('role', 'superadmin')
             ->call('invite')
@@ -49,25 +49,25 @@ describe('sending invites', function () {
         $owner->currentWorkspace()->users()->attach($other->id, ['role' => Workspace::ROLE_MEMBER]);
         $this->actingAs($owner);
 
-        Volt::test('workspaces.team')
+        Volt::test('workspaces.team', ['workspace' => $owner->currentWorkspace()])
             ->set('email', $other->email)
             ->set('role', Workspace::ROLE_MEMBER)
             ->call('invite')
             ->assertHasErrors(['email']);
     });
 
-    it('forbids a non-manager from inviting on a workspace they do not own', function () {
-        // currentWorkspace() always resolves to the user's own (owned) workspace today --
-        // there's no workspace switcher yet -- so this exercises the underlying
-        // Workspace::canManageMembers() check directly rather than through the Volt
-        // component, which only ever operates on the acting user's own workspace.
+    it('forbids a member from inviting on a workspace they do not manage', function () {
         $owner = User::factory()->create();
         $member = User::factory()->create();
         $workspace = $owner->currentWorkspace();
         $workspace->users()->attach($member->id, ['role' => Workspace::ROLE_MEMBER]);
+        $this->actingAs($member);
 
-        expect($workspace->canManageMembers($member))->toBeFalse();
-        expect($workspace->canManageMembers($owner))->toBeTrue();
+        Volt::test('workspaces.team', ['workspace' => $workspace])
+            ->set('email', 'teammate@example.com')
+            ->set('role', Workspace::ROLE_MEMBER)
+            ->call('invite')
+            ->assertForbidden();
     });
 
     it('re-inviting the same email refreshes the existing invite instead of erroring', function () {
@@ -76,8 +76,8 @@ describe('sending invites', function () {
         $owner = User::factory()->create();
         $this->actingAs($owner);
 
-        Volt::test('workspaces.team')->set('email', 'teammate@example.com')->call('invite');
-        Volt::test('workspaces.team')->set('email', 'teammate@example.com')->call('invite')->assertHasNoErrors();
+        Volt::test('workspaces.team', ['workspace' => $owner->currentWorkspace()])->set('email', 'teammate@example.com')->call('invite');
+        Volt::test('workspaces.team', ['workspace' => $owner->currentWorkspace()])->set('email', 'teammate@example.com')->call('invite')->assertHasNoErrors();
 
         expect(WorkspaceInvite::where('email', 'teammate@example.com')->count())->toBe(1);
     });

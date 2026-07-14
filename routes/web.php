@@ -5,6 +5,7 @@ use App\Http\Controllers\WorkspaceInviteController;
 use App\Models\Board;
 use App\Models\BoardShareLink;
 use App\Models\ShareLinkAccess;
+use App\Models\Workspace;
 use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
@@ -36,7 +37,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('boards.show', ['board' => $board]);
     })->name('boards.show');
 
-    Route::get('/team', fn () => view('workspaces.team'))->name('team');
+    Route::get('/team', fn () => view('workspaces.team', ['workspace' => auth()->user()->currentWorkspace()]))
+        ->name('team');
+
+    Route::get('/team/{workspace}', function (Workspace $workspace) {
+        abort_unless($workspace->hasMember(auth()->user()), 403);
+
+        return view('workspaces.team', ['workspace' => $workspace]);
+    })->name('team.show');
 });
 
 Route::get('/invites/{token}', [WorkspaceInviteController::class, 'show'])->name('invites.show');
