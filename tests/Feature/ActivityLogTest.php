@@ -43,6 +43,21 @@ describe('ActivityLogger service', function () {
             'subject_id' => $board->id,
         ]);
     });
+
+    it('degrades to an anonymous log entry instead of crashing when the actor no longer exists', function () {
+        // Regression: a session can outlive the user it belongs to (e.g. deleted
+        // from another tab). ActivityLog.user_id has an ON DELETE SET NULL FK,
+        // so this must never attempt to insert a dangling reference.
+        $board = Board::factory()->create();
+
+        ActivityLogger::log('board.created', $board, null, 999999);
+
+        $this->assertDatabaseHas('activity_logs', [
+            'user_id' => null,
+            'event' => 'board.created',
+            'subject_id' => $board->id,
+        ]);
+    });
 });
 
 describe('Board observer', function () {

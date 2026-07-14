@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ActivityLog;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Request;
 
@@ -19,8 +20,18 @@ class ActivityLogger
         ?array $properties = null,
         ?int $userId = null,
     ): void {
+        $userId ??= auth()->id();
+
+        // A session can outlive the user it belongs to (e.g. the account was
+        // deleted from another tab/device). Degrade to an anonymous log entry
+        // instead of a hard FK-constraint crash -- the schema already treats
+        // user_id as nullable ("system"/unattributed events) for this reason.
+        if ($userId !== null && ! User::whereKey($userId)->exists()) {
+            $userId = null;
+        }
+
         ActivityLog::create([
-            'user_id' => $userId ?? auth()->id(),
+            'user_id' => $userId,
             'event' => $event,
             'subject_type' => $subject ? $subject->getMorphClass() : null,
             'subject_id' => $subject?->getKey(),

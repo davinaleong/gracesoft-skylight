@@ -437,3 +437,30 @@ Notes:
 
 - **Milestone 2 — Teams & Collaboration is now fully complete.** All 7 items checked off: team invites, roles, permission checks, member management, in-app notifications, @mentions, and this board activity feed.
 - This iteration is a good example of why the verify step matters even when unit tests are green: the bug only manifested on the one code path (`card.updated` with no move) that none of the *other* feature's tests happened to exercise, because `BoardsTest`/`ChecklistsTest`/etc. test their own domain, not the activity feed's rendering of their side effects.
+
+## 2026-07-14 - Iteration 15 (Milestone 3)
+
+Implemented item:
+
+- Sample/demo board auto-created on signup
+
+Changes made:
+
+- New `App\Services\DemoBoardSeeder::seed(User $user): Board` — creates a "Welcome to {app name}" board with 3 columns (To Do / In Progress / Done) and 4 cards that double as a mini onboarding tour: one card explaining markdown/checklists/comments/attachments (with an actual 2-item checklist attached, so the checklist UI isn't just described, it's demonstrated), one nudging the user toward the Team page, one about drag-and-drop, one closing the loop ("create your first real board").
+- Wired into the two real signup entry points only — `CreateNewUser::create()` (email/password) and `SocialiteController::findOrCreateUser()`'s brand-new-OAuth-user branch — **not** `UserObserver`. This was a deliberate choice: `UserObserver::created()` fires for every `User` row including test factories/seeders/tinker, and demo *content* (unlike the workspace, which is a structural invariant) has no reason to exist for those. Confirmed via test: factory-created users have zero boards.
+- Fixed a real bug found while manually verifying this end-to-end: registering through the actual `/register` form 500'd with `SQLSTATE[23000]: ... activity_logs_user_id_foreign FOREIGN KEY (user_id) REFERENCES users (id)`. Root cause: `ActivityLogger::log()` falls back to `auth()->id()` when no explicit user id is given, and `BoardObserver`/`CardObserver` (fired by the demo board's own `Board::create()`/column/card creates) don't pass one explicitly — so it inherited whatever the current session claimed, which in this case was a **deleted** user (an artifact of this session's own repeated tinker-created-and-deleted QA accounts sharing one browser tab across many manual-verification passes, but the underlying failure mode — a session outliving the user it belongs to — is a legitimate production scenario too, e.g. an account deleted from another tab/device). Fixed `ActivityLogger::log()` to check the resolved user id actually exists before using it, degrading to a `null` (`ON DELETE SET NULL` per schema) actor instead of crashing.
+
+Tests added/updated:
+
+- New `tests/Feature/DemoBoardTest.php` (5 tests): demo board created on real email/password registration (1 board, 3 columns), created for a brand-new OAuth user, **not** duplicated when an OAuth login links to an existing account, **not** created for plain factory-created users, and a direct `DemoBoardSeeder::seed()` unit test asserting the exact shape (3 columns, 4 cards, 1 checklist with 2 items on the welcome card).
+- New regression test in `tests/Feature/ActivityLogTest.php`: `ActivityLogger::log()` with a non-existent user id degrades to a null-actor log entry instead of throwing.
+
+Validation:
+
+- Full suite: passing (163/163)
+- Pint (dirty): passing
+- Manual browser check: this is what caught the bug above. First attempt crashed with a real 500 on the actual `/register` form; traced it via the Laravel error page's exception trace + query log, fixed `ActivityLogger`, cleaned up the partial user row, opened a **fresh browser tab** (to rule out any of this session's own stale-cookie noise) and re-registered successfully — confirmed via `tinker` that exactly one board with 3 columns was created, then loaded `/home` in the browser and saw the "Welcome to GraceSoft Skylight" card render correctly. Test user cleaned up afterward.
+
+Notes:
+
+- This iteration is a second concrete example (after the activity-feed `describe()` crash last iteration) of the manual-verification step catching a bug automated tests didn't — this time because the crash depended on ambient session state that a clean `RefreshDatabase` test never reproduces on its own.

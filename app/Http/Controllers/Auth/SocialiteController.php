@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\DemoBoardSeeder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
@@ -78,6 +79,8 @@ class SocialiteController extends Controller
         ]);
 
         $user->forceFill(['email_verified_at' => now()])->save();
+
+        DemoBoardSeeder::seed($user);
 
         return $user;
     }

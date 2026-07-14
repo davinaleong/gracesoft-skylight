@@ -32,7 +32,7 @@ _Goal: more than one person can work in a workspace._
 
 _Goal: first 60 seconds convinces someone to stay._
 
-- [ ] Sample/demo board auto-created on signup
+- [x] Sample/demo board auto-created on signup
 - [ ] Guided setup wizard (create first board, invite team, optional)
 - [ ] Empty states with clear CTAs (no boards, no cards, no comments yet)
 - [ ] Board templates (sprint board, content calendar, client onboarding, etc.)
