@@ -34,3 +34,30 @@ Validation:
 Notes:
 
 - UserFactory defaults to verified users. New verification tests explicitly use ->unverified() to avoid false positives.
+
+## 2026-07-14 - Iteration 2 (Milestone 1)
+
+Implemented item:
+
+- Password reset flow (confirm works end-to-end for self-serve users)
+
+Changes made:
+
+- Expanded auth feature tests to cover full self-serve password reset behavior:
+    - request reset link by email
+    - assert reset notification dispatch
+    - reset with valid token
+    - login succeeds with new password
+
+Tests added/updated:
+
+- Updated tests/Feature/AuthTest.php password reset section with end-to-end assertions.
+
+Validation:
+
+- AuthTest suite: passing (17/17)
+- Pint (dirty): passing
+
+Notes:
+
+- This iteration focused on production-critical verification of existing Fortify reset flows without introducing extra auth complexity.

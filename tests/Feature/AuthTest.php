@@ -1,7 +1,10 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
 
 uses(RefreshDatabase::class);
@@ -91,6 +94,35 @@ describe('password reset', function () {
         $this->get(route('password.request'))
             ->assertOk()
             ->assertSee('Send reset link');
+    });
+
+    it('sends a reset link notification for a registered user', function () {
+        Notification::fake();
+        $user = User::factory()->create();
+
+        $this->post(route('password.email'), ['email' => $user->email])
+            ->assertSessionHas('status');
+
+        Notification::assertSentTo($user, ResetPassword::class);
+    });
+
+    it('resets password with a valid token and allows login with the new password', function () {
+        $user = User::factory()->create(['password' => bcrypt('old-password')]);
+        $token = Password::broker()->createToken($user);
+
+        $this->post(route('password.update'), [
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ])->assertRedirect(route('login'));
+
+        $this->post(route('login'), [
+            'email' => $user->email,
+            'password' => 'new-password',
+        ])->assertRedirect(route('home'));
+
+        $this->assertAuthenticatedAs($user);
     });
 });
 
