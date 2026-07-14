@@ -9,7 +9,7 @@ Tracking milestones to turn the personal kanban app into a usable, sellable prod
 _Goal: someone can sign up and use it without you creating their account._
 
 - [x] Public signup flow (email/password)
-- [ ] OAuth signup (Google and/or GitHub)
+- [x] OAuth signup (Google and/or GitHub) — code scaffolded end-to-end and tested against placeholder credentials; real client ID/secret from Google Cloud Console & GitHub Developer Settings still needed before production use
 - [x] Email verification flow
 - [x] Password reset flow (confirm works end-to-end for self-serve users)
 - [ ] Workspace/tenant model — each account gets an isolated workspace

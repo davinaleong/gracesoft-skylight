@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\SocialiteController;
 use App\Models\Board;
 use App\Models\BoardShareLink;
 use App\Models\ShareLinkAccess;
@@ -9,6 +10,16 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return auth()->check() ? redirect()->route('home') : redirect()->route('login');
+});
+
+Route::middleware(['web', 'guest'])->prefix('auth')->group(function () {
+    Route::get('/{provider}/redirect', [SocialiteController::class, 'redirect'])
+        ->whereIn('provider', SocialiteController::PROVIDERS)
+        ->name('oauth.redirect');
+
+    Route::get('/{provider}/callback', [SocialiteController::class, 'callback'])
+        ->whereIn('provider', SocialiteController::PROVIDERS)
+        ->name('oauth.callback');
 });
 
 Route::middleware(['auth'])->group(function () {

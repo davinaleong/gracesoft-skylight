@@ -87,3 +87,38 @@ Validation:
 Notes:
 
 - Confirmed Fortify does not apply any rate limiter to `/register` by default (only `login` and `two-factor` have configurable limiters in `config/fortify.php`). Not adding one in this iteration since it would require hacking route middleware post-registration; flagging for Milestone 8 (Trust & Ops / production hardening) instead.
+
+## 2026-07-14 - Iteration 4 (Milestone 1)
+
+Implemented item:
+
+- OAuth signup (Google and/or GitHub)
+
+Changes made:
+
+- Installed `laravel/socialite` (^5.28).
+- Migration `2026_07_14_024607_add_oauth_provider_columns_to_users_table`: made `password` nullable (OAuth-only accounts have none), added `oauth_provider` + `oauth_provider_id` columns with a unique composite index.
+- `User` model: added `oauth_provider`/`oauth_provider_id` to fillable.
+- `config/services.php`: added `google` and `github` blocks reading `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`/`GOOGLE_REDIRECT_URI` and `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET`/`GITHUB_REDIRECT_URI` from env (placeholders added to `.env` and `.env.example`).
+- New `App\Http\Controllers\Auth\SocialiteController` with `redirect()`/`callback()`, restricted to an explicit `PROVIDERS = ['google', 'github']` allow-list (404 on anything else):
+    - Matches existing user by `oauth_provider` + `oauth_provider_id`.
+    - Falls back to matching by email to **link** the provider to an existing password account (and marks email verified, since the provider already verified it).
+    - Otherwise creates a new user with `password = null` and `email_verified_at` set immediately.
+    - Wraps the Socialite exchange in try/catch (`InvalidStateException` + generic `Throwable`) and redirects back to `/login` with a flash error instead of a 500 on provider failure/cancellation.
+- New routes `GET /auth/{provider}/redirect` (`oauth.redirect`) and `GET /auth/{provider}/callback` (`oauth.callback`), both behind `guest` middleware, `whereIn('provider', ...)` constrained.
+- New `resources/views/auth/partials/oauth-buttons.blade.php` (Google/GitHub buttons + "or" divider), included at the top of both `auth.login` and `auth.register` views.
+
+Tests added/updated:
+
+- New `tests/Feature/OAuthTest.php` (10 tests): redirect works for both providers, unsupported provider 404s, authenticated users can't hit the redirect route, new-user creation on first sign-in (verified + null password), matching by existing provider id, linking to an existing email/password account, provider-exchange failure redirects to login with an error, and that an OAuth-only account (`password = null`) can't be logged into via the password form.
+- Used Socialite's built-in `Socialite::fake($driver, $user)` test double and `Laravel\Socialite\Two\User::fake([...])`.
+
+Validation:
+
+- Full suite: passing (92/92)
+- Pint (dirty): passing
+- Manual browser check: started `php artisan serve` via `.claude/launch.json` (added, pointing at the PHP 8.5 binary since the project requires PHP >=8.4.1 and only 8.5 is installed under Laragon), confirmed both `/login` and `/register` render the new OAuth buttons above the existing form, and that `/auth/google/redirect` correctly redirects to Google's real OAuth authorization endpoint (erroring only on the placeholder `client_id`, as expected without real credentials).
+
+Notes:
+
+- Real `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` and `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` values still need to be supplied by the project owner (OAuth apps registered in Google Cloud Console / GitHub Developer Settings) before this is usable in production — code is fully wired and tested against placeholders.

@@ -1,6 +1,8 @@
 <x-layouts.auth title="Create account — {{ config('app.name', 'Skylight') }}">
     <h1 class="mb-6 text-center text-xl font-semibold">Create your account</h1>
 
+    @include('auth.partials.oauth-buttons')
+
     <form method="POST" action="{{ route('register') }}" class="space-y-5">
         @csrf
 

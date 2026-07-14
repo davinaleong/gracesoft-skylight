@@ -1,6 +1,8 @@
 <x-layouts.auth title="Sign in — {{ config('app.name', 'Skylight') }}">
     <h1 class="mb-6 text-center text-xl font-semibold">Sign in to your account</h1>
 
+    @include('auth.partials.oauth-buttons')
+
     {{-- Session status --}}
     @if (session('status'))
         <div class="mb-4 rounded-lg bg-green-50 dark:bg-green-900/20 p-3 text-sm text-green-700 dark:text-green-400">
