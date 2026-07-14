@@ -24,7 +24,7 @@ _Goal: more than one person can work in a workspace._
 - [x] Roles: Admin / Member / Viewer
 - [x] Permission checks on board/card actions per role
 - [x] Member management UI (remove/re-invite/change role)
-- [ ] @mentions in comments
+- [x] @mentions in comments
 - [x] In-app notifications (bell/dropdown), not just email
 - [ ] Activity feed per board
 

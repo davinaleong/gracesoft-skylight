@@ -7,6 +7,7 @@ use App\Models\Checklist;
 use App\Models\ChecklistItem;
 use App\Models\Comment;
 use App\Models\MarkdownNote;
+use App\Notifications\Card\CommentMentionNotification;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -133,18 +134,66 @@ new class extends Component {
         return $this->card->comments()->with('user')->get();
     }
 
+    #[Computed]
+    public function workspaceMembers()
+    {
+        return $this->card->column->board->workspace->users;
+    }
+
     public function addComment(): void
     {
         $this->authorizeEdit($this->card);
 
         $this->validate(['newCommentBody' => ['required', 'string', 'max:2000']]);
 
-        $this->card->comments()->create([
+        $comment = $this->card->comments()->create([
             'user_id' => auth()->id(),
             'body' => $this->newCommentBody,
         ]);
 
+        $this->notifyMentions($comment);
+
         $this->reset('newCommentBody');
+    }
+
+    /**
+     * Parse @handle tokens (see User::mentionHandle()) out of a comment body and
+     * notify any matching current-workspace member, excluding the comment's author.
+     */
+    protected function notifyMentions(Comment $comment): void
+    {
+        preg_match_all('/@([a-z0-9]+)/i', $comment->body, $matches);
+        $handles = array_unique(array_map('strtolower', $matches[1]));
+
+        if (empty($handles)) {
+            return;
+        }
+
+        $this->workspaceMembers
+            ->filter(fn ($user) => $user->id !== auth()->id() && in_array($user->mentionHandle(), $handles, true))
+            ->unique('id')
+            ->each(fn ($user) => $user->notify(new CommentMentionNotification($comment)));
+
+        unset($this->workspaceMembers);
+    }
+
+    /**
+     * Escape the comment body, then wrap recognized @handle tokens in a
+     * highlighted span showing the mentioned member's real name.
+     */
+    public function renderCommentBody(string $body): string
+    {
+        $handleMap = $this->workspaceMembers->mapWithKeys(fn ($user) => [$user->mentionHandle() => $user->name]);
+
+        return preg_replace_callback('/@([a-z0-9]+)/i', function (array $match) use ($handleMap) {
+            $handle = strtolower($match[1]);
+
+            if (! $handleMap->has($handle)) {
+                return $match[0];
+            }
+
+            return '<span class="font-medium text-indigo-600 dark:text-indigo-400">@'.e($handleMap[$handle]).'</span>';
+        }, e($body));
     }
 
     public function deleteComment(int $commentId): void
@@ -403,12 +452,57 @@ new class extends Component {
 
         {{-- Add comment --}}
         <form wire:submit="addComment" class="space-y-2">
-            <textarea
-                wire:model="newCommentBody"
-                rows="3"
-                placeholder="Write a comment&hellip;"
-                class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none @error('newCommentBody') border-red-500 @enderror"
-            ></textarea>
+            <div
+                x-data="{
+                    members: @js($this->workspaceMembers->map(fn ($u) => ['name' => $u->name, 'handle' => $u->mentionHandle()])->values()),
+                    show: false,
+                    query: '',
+                    filtered() {
+                        return this.members.filter(m => m.handle.startsWith(this.query.toLowerCase())).slice(0, 5);
+                    },
+                    onInput(e) {
+                        const cursor = e.target.selectionStart;
+                        const match = e.target.value.slice(0, cursor).match(/@([a-z0-9]*)$/i);
+                        this.query = match ? match[1] : '';
+                        this.show = !!match;
+                    },
+                    pick(handle) {
+                        const el = this.$refs.commentInput;
+                        const cursor = el.selectionStart;
+                        const upToCursor = el.value.slice(0, cursor).replace(/@([a-z0-9]*)$/i, '@' + handle + ' ');
+                        this.$wire.set('newCommentBody', upToCursor + el.value.slice(cursor));
+                        this.show = false;
+                        this.$nextTick(() => el.focus());
+                    }
+                }"
+                class="relative"
+            >
+                <textarea
+                    x-ref="commentInput"
+                    wire:model="newCommentBody"
+                    @input="onInput($event)"
+                    rows="3"
+                    placeholder="Write a comment&hellip; use @ to mention a teammate"
+                    class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none @error('newCommentBody') border-red-500 @enderror"
+                ></textarea>
+                <div
+                    x-show="show && filtered().length > 0"
+                    @click.outside="show = false"
+                    x-cloak
+                    class="absolute z-10 mt-1 w-56 overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-lg ring-1 ring-gray-200 dark:ring-gray-700"
+                >
+                    <template x-for="member in filtered()" :key="member.handle">
+                        <button
+                            type="button"
+                            @click="pick(member.handle)"
+                            class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+                        >
+                            <span x-text="member.name"></span>
+                            <span class="text-xs text-gray-400" x-text="'@' + member.handle"></span>
+                        </button>
+                    </template>
+                </div>
+            </div>
             @error('newCommentBody') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
             <button type="submit" class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors">
                 Post comment
@@ -436,7 +530,7 @@ new class extends Component {
                                 @endif
                             </div>
                         </div>
-                        <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ $comment->body }}</p>
+                        <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{!! $this->renderCommentBody($comment->body) !!}</p>
                     </div>
                 @endforeach
             </div>

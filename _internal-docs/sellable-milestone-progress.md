@@ -376,3 +376,36 @@ Validation:
 Notes:
 
 - No real-time push — notifications appear on next page load or the next 30-second poll, not instantly. Full real-time (Laravel Reverb/Pusher + Echo) is infrastructure this app doesn't have yet and felt like scope creep for "add a notification bell"; flagging as a natural follow-up if live updates become a priority.
+
+## 2026-07-14 - Iteration 13 (Milestone 2)
+
+Implemented item:
+
+- @mentions in comments
+
+Changes made:
+
+- `User::mentionHandle(): string` — the user's name slugged with no separator (`"Grace Hopper"` → `gracehopper`). This app has no separate username field, so the handle is derived rather than stored, and is always unique enough within a small workspace's member list.
+- New `App\Notifications\Card\CommentMentionNotification` (mail + database channels, reusing the same `{title, body, url}` `toArray()` shape as the rest of the bell's notifications).
+- `cards.detail` Volt component:
+    - New `workspaceMembers` computed property (`$this->card->column->board->workspace->users`).
+    - `addComment()` now calls a new `notifyMentions(Comment $comment)` after creating the comment: regex-extracts `@handle` tokens (`/@([a-z0-9]+)/i`), matches them case-insensitively against current workspace members' `mentionHandle()`, excludes the comment's own author (no self-notify), de-duplicates, and notifies each match.
+    - New `renderCommentBody(string $body): string` — escapes the raw body first (`e($body)`), then wraps recognized `@handle` tokens in a highlighted `<span>` showing the mentioned member's real name. Unrecognized `@something` tokens are left as plain (already-escaped) text. Safe against XSS since escaping happens before any HTML is reintroduced, and the only re-inserted content (`$user->name`) is itself re-escaped.
+- View changes in `cards/detail.blade.php`:
+    - The comment textarea gained an Alpine.js-powered mention autocomplete: typing `@` opens a small dropdown filtered by the workspace members list (passed in via `@js(...)`), listing name + handle; clicking a member inserts `@handle ` at the cursor position via `$wire.set('newCommentBody', ...)`.
+    - Comment display now renders via `{!! $this->renderCommentBody($comment->body) !!}` instead of the plain escaped `{{ $comment->body }}`.
+
+Tests added/updated:
+
+- New `tests/Feature/CommentMentionsTest.php` (7 tests): `mentionHandle()` slugging, a mentioned workspace member gets notified (mail + database), the comment author is never self-notified, an unmatched handle is silently ignored (comment still saves fine), matching is case-insensitive, mentioning the same person twice in one comment only notifies once, and a recognized mention renders as a highlighted span with the real name (not the raw handle).
+- Existing `tests/Feature/CommentsTest.php` unaffected (4/4 still passing).
+
+Validation:
+
+- Full suite: passing (151/151)
+- Pint (dirty): passing
+- Manual browser check: created an owner + teammate ("Grace Hopper") sharing a workspace, seeded a comment containing `@gracehopper` directly via `tinker`, opened the card in the real UI and confirmed it rendered as a styled `<span class="font-medium text-indigo-600...">@Grace Hopper</span>` (verified via `outerHTML`, not just visible text). Also typed `@gr` into the live comment textarea via a dispatched `input` event and confirmed the autocomplete dropdown correctly filtered to show "Grace Hopper @gracehopper". Test users cleaned up afterward.
+
+Notes:
+
+- Handles are name-derived, not a stored username — if two workspace members share the exact same slugged name (e.g. two "John Smith"s), mentioning either produces the same handle and both get notified. Acceptable for small teams; a real username field would be the fix if this becomes a problem, but wasn't warranted for this checklist item.

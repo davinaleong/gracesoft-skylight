@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 #[Fillable(['name', 'email', 'password', 'oauth_provider', 'oauth_provider_id', 'avatar_path'])]
@@ -90,5 +91,14 @@ class User extends Authenticatable implements MustVerifyEmailContract
         }
 
         return $disk->url($this->avatar_path);
+    }
+
+    /**
+     * The @handle used for mentions in comments -- the user's name, slugged
+     * with no separator (e.g. "Ada Lovelace" -> "adalovelace").
+     */
+    public function mentionHandle(): string
+    {
+        return Str::slug($this->name, '');
     }
 }
