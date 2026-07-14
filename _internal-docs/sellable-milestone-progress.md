@@ -349,3 +349,30 @@ Validation:
 Notes:
 
 - The workspace-switcher fix here is intentionally minimal (a links row, not a persistent nav-level switcher) — just enough to make the admin role and member-management actions actually reachable and testable. A first-class workspace switcher in the main app nav (for boards, not just `/team`) is a larger piece of UX that fits better under a future onboarding/UX milestone once multiple real workspaces per user are a common case.
+
+## 2026-07-14 - Iteration 12 (Milestone 2)
+
+Implemented item:
+
+- In-app notifications (bell/dropdown), not just email
+
+Changes made:
+
+- Ran `php artisan notifications:table` + migrated: standard Laravel polymorphic `notifications` table (uuid PK, `notifiable` morph, `data` json, `read_at`). `User` already gets `notifications()`/`unreadNotifications()` for free via the `Notifiable` trait it already used.
+- Added `'database'` to the `via()` channels — and a matching `toArray()` — on the notifications that make sense as in-app alerts: `ShareLinkCreatedNotification`, `ShareLinkRevokedNotification`, `NewIpLoginNotification`, `SuspiciousLoginNotification`, `PasswordChangedNotification`, `RecoveryCodeUsedNotification`, `CardDueNotification`. Each `toArray()` returns a consistent `{title, body, url}` shape so the bell can render generically without per-type branching. Left `WelcomeNotification` and `WorkspaceInvitationNotification` mail-only (the latter is routed to a raw email address via `Notification::route()`, not a `User`, so there's no notifiable to write a database row against).
+- New Volt component `resources/views/livewire/notifications/bell.blade.php`: bell icon with an unread-count badge, `wire:poll.30s` to pick up new notifications without a full page reload (no websockets/Echo in this app, so this is the honest lightweight option), a dropdown listing the latest 15, `markAsRead(string $id)` / `markAllAsRead()`, click-outside-to-close via Alpine.
+- Wired into the main app nav (`components/layouts/app.blade.php`), next to the dark-mode toggle.
+
+Tests added/updated:
+
+- New `tests/Feature/NotificationBellTest.php` (7 tests): zero-state, unread count only counts unread, a user only ever sees their own notifications (not another user's), mark-one-as-read persists, mark-all-as-read persists, a user cannot mark *another* user's notification as read (404s via `findOrFail` scoped to `auth()->user()->notifications()`), and an end-to-end check that a real notification (`PasswordChangedNotification`) actually lands in the database channel with the expected `title`.
+
+Validation:
+
+- Full suite: passing (144/144)
+- Pint (dirty): passing (auto-fixed import ordering in the new test file)
+- Manual browser check: created a user via `tinker`, manually inserted a `PasswordChangedNotification`-shaped database notification, logged in through the real UI, clicked the bell, confirmed the dropdown showed the notification with title/body/timestamp and a "Mark all as read" button, clicked it, and confirmed the button disappeared (unread count hit zero) without a page reload. Test user cleaned up afterward.
+
+Notes:
+
+- No real-time push — notifications appear on next page load or the next 30-second poll, not instantly. Full real-time (Laravel Reverb/Pusher + Echo) is infrastructure this app doesn't have yet and felt like scope creep for "add a notification bell"; flagging as a natural follow-up if live updates become a priority.

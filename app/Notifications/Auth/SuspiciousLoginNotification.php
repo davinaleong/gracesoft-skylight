@@ -17,7 +17,16 @@ class SuspiciousLoginNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => 'Suspicious login activity',
+            'body' => $this->failedAttempts.' consecutive failed login attempts in the last 10 minutes.',
+            'url' => route('profile'),
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

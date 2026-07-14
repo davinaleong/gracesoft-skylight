@@ -18,7 +18,16 @@ class ShareLinkRevokedNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => 'Share link revoked',
+            'body' => 'A read-only share link for "'.$this->board->name.'" was revoked.',
+            'url' => route('boards.show', $this->board),
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

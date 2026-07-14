@@ -22,7 +22,16 @@ class ShareLinkCreatedNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => 'Share link created',
+            'body' => 'A read-only share link was created for "'.$this->board->name.'".',
+            'url' => route('boards.show', $this->board),
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

@@ -13,7 +13,16 @@ class PasswordChangedNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => 'Password changed',
+            'body' => 'Your password was successfully changed.',
+            'url' => route('profile'),
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

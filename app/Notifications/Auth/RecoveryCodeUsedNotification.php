@@ -13,7 +13,16 @@ class RecoveryCodeUsedNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => '2FA recovery code used',
+            'body' => 'One of your two-factor recovery codes was just used to sign in.',
+            'url' => route('profile'),
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

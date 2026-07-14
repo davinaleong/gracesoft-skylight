@@ -25,7 +25,21 @@ class CardDueNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        $isDueToday = $this->type === self::TYPE_DUE_TODAY;
+        $count = $this->cards->count();
+
+        return [
+            'title' => $isDueToday
+                ? "{$count} card".($count !== 1 ? 's' : '').' due today'
+                : "{$count} overdue card".($count !== 1 ? 's' : ''),
+            'body' => $this->cards->pluck('title')->take(3)->implode(', ').($count > 3 ? ', ...' : ''),
+            'url' => route('home'),
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

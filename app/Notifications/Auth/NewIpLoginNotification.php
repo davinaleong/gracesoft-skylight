@@ -13,7 +13,16 @@ class NewIpLoginNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => 'New sign-in to your account',
+            'body' => 'We noticed a sign-in from a location we have not seen before.',
+            'url' => route('profile'),
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage
