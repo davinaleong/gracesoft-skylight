@@ -45,6 +45,26 @@ describe('registration', function () {
 
         $this->assertGuest();
     });
+
+    it('rejects registration with an email already in use', function () {
+        User::factory()->create(['email' => 'taken@example.com']);
+
+        $this->post(route('register'), [
+            'name' => 'Test User',
+            'email' => 'taken@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])->assertSessionHasErrors('email');
+
+        $this->assertGuest();
+        expect(User::where('email', 'taken@example.com')->count())->toBe(1);
+    });
+
+    it('is linked from the login page', function () {
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee(route('register'), false);
+    });
 });
 
 describe('login', function () {

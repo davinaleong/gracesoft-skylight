@@ -8,7 +8,7 @@ Tracking milestones to turn the personal kanban app into a usable, sellable prod
 
 _Goal: someone can sign up and use it without you creating their account._
 
-- [ ] Public signup flow (email/password)
+- [x] Public signup flow (email/password)
 - [ ] OAuth signup (Google and/or GitHub)
 - [x] Email verification flow
 - [x] Password reset flow (confirm works end-to-end for self-serve users)

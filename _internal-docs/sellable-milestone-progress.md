@@ -61,3 +61,29 @@ Validation:
 Notes:
 
 - This iteration focused on production-critical verification of existing Fortify reset flows without introducing extra auth complexity.
+
+## 2026-07-14 - Iteration 3 (Milestone 1)
+
+Implemented item:
+
+- Public signup flow (email/password)
+
+Changes made:
+
+- No new production code needed: Fortify's `Features::registration()` was already enabled, `Fortify::registerView()` wired to `auth.register`, `CreateNewUser` action validates name/email/password with unique-email + standard password rules, and the login page already links to `/register` (and vice versa).
+- This iteration was a verification/hardening pass rather than new scaffolding.
+
+Tests added/updated:
+
+- Added to `tests/Feature/AuthTest.php`:
+    - rejects registration with an email already in use (asserts no duplicate row created)
+    - login page links to the register route
+
+Validation:
+
+- AuthTest suite: passing (19/19)
+- Pint (dirty): passing
+
+Notes:
+
+- Confirmed Fortify does not apply any rate limiter to `/register` by default (only `login` and `two-factor` have configurable limiters in `config/fortify.php`). Not adding one in this iteration since it would require hacking route middleware post-registration; flagging for Milestone 8 (Trust & Ops / production hardening) instead.
