@@ -222,7 +222,22 @@ new class extends Component
 };
 ?>
 
-<div>
+<div
+    x-data
+    @keydown.window="
+        const tag = $event.target.tagName;
+        const typing = tag === 'INPUT' || tag === 'TEXTAREA' || $event.target.isContentEditable;
+
+        if ($event.key === 'c' && !typing) {
+            $event.preventDefault();
+            const firstColumnId = document.querySelector('[data-column-id]')?.dataset.columnId;
+            if (firstColumnId) {
+                $wire.set('addingCardToColumn', parseInt(firstColumnId));
+                $nextTick(() => document.querySelector('[data-sortable-cards] input[type=text]')?.focus());
+            }
+        }
+    "
+>
     @php
         $boardColumns = $board->columns()->with(['cards.labels'])->get();
         $boardLabels  = $board->labels()->orderBy('name')->get();

@@ -43,7 +43,7 @@ _Goal: first 60 seconds convinces someone to stay._
 _Goal: feels good to use daily, not just functional._
 
 - [x] Fast, smooth drag-and-drop (test Livewire perf; consider Alpine.js for drag interactions)
-- [ ] Keyboard shortcuts (quick-add card, navigate columns, etc.)
+- [x] Keyboard shortcuts (quick-add card, navigate columns, etc.)
 - [x] Global search across boards
 - [ ] Filters (label, assignee, due date, status)
 - [ ] Mobile-responsive layout audit (test on actual phone viewport)

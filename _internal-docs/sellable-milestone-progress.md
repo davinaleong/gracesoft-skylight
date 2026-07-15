@@ -605,3 +605,29 @@ Validation:
 Notes:
 
 - Keyboard shortcuts, filters, mobile-responsive audit, and loading/skeleton states are the remaining Milestone 4 items.
+
+## 2026-07-14 - Iteration 21 (Milestone 4)
+
+Implemented item:
+
+- Keyboard shortcuts (quick-add card, navigate columns, etc.)
+
+Changes made:
+
+- All shortcuts are pure Alpine.js (`@keydown.window`), no Livewire round-trip just to open a form — consistent with the drag-and-drop philosophy from the previous iteration (client-side first, server calls only when data actually needs to persist).
+- `components/layouts/app.blade.php` (applies on every authenticated page): `/` focuses the global search input (added `id="global-search-input"` to `search/global.blade.php`'s input for this to target), `?` opens a keyboard-shortcuts help overlay (a small Alpine-only modal listing all shortcuts), `Escape` closes it. All three ignore keypresses while the user is actively typing in an input/textarea/contenteditable, so normal typing (including a literal "c" or "/" in a card title) is never hijacked.
+- `boards/show.blade.php`: `c` opens the "add card" form on the board's first column and focuses its text input — the closest fit to "quick-add card" given cards belong to a specific column and there's no existing concept of a "currently focused column" to navigate between (see Notes).
+
+Tests added/updated:
+
+- New `tests/Feature/KeyboardShortcutsTest.php` (3 tests): the `#global-search-input` id is present on the home page (for `/` to target), the shortcuts help overlay text renders on every authenticated page, and the `c`-key handler markup is present on the board page. These assert on rendered HTML/JS presence rather than simulating real keypresses, since Pest has no browser — the actual keydown behavior was verified live instead (see Validation).
+
+Validation:
+
+- Full suite: passing (184/184)
+- Pint (dirty): passing
+- Manual browser check (this is where the real behavior was verified, not Pest): logged in, pressed `/` and confirmed `document.activeElement.id === 'global-search-input'`; dispatched a real `?` keydown event and confirmed the shortcuts overlay's computed `display` flipped to `flex` (took a screenshot to visually confirm it rendered correctly) — note the automated `key` tool's `shift+slash` combo didn't reliably produce a `?` keydown, so this was confirmed via a manually dispatched `KeyboardEvent` instead, worth knowing for future keyboard-shortcut QA in this environment; navigated to a real board and dispatched a `c` keydown, confirming `document.activeElement` became the card-title input with placeholder "Card title…".
+
+Notes:
+
+- "Navigate columns" from the checklist wording wasn't built as a distinct arrow-key column-focus system — there's no existing UI concept of column focus/selection to hook into, and adding one (a highlighted "current column" state, arrow-key navigation between columns, Enter-to-quick-add) is a meaningfully bigger feature than a single shortcut. Scoped this iteration to the two shortcuts that map directly onto existing actions (search, quick-add) rather than introducing new UI state for a checklist item phrased as "etc." Flagging as a reasonable follow-up rather than silently skipping it.

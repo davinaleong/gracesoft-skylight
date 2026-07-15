@@ -23,7 +23,59 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 antialiased">
+<body
+    class="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 antialiased"
+    x-data="{ showShortcuts: false }"
+    @keydown.window="
+        const tag = $event.target.tagName;
+        const typing = tag === 'INPUT' || tag === 'TEXTAREA' || $event.target.isContentEditable;
+
+        if ($event.key === '/' && !typing) {
+            $event.preventDefault();
+            document.getElementById('global-search-input')?.focus();
+        } else if ($event.key === '?' && !typing) {
+            $event.preventDefault();
+            showShortcuts = true;
+        } else if ($event.key === 'Escape') {
+            showShortcuts = false;
+        }
+    "
+>
+    {{-- Keyboard shortcuts help overlay --}}
+    <div
+        x-show="showShortcuts"
+        x-cloak
+        @click.self="showShortcuts = false"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+    >
+        <div class="w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 shadow-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-base font-semibold">Keyboard shortcuts</h2>
+                <button @click="showShortcuts = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" aria-label="Close">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <dl class="space-y-2.5 text-sm">
+                <div class="flex items-center justify-between">
+                    <dt class="text-gray-600 dark:text-gray-400">Focus search</dt>
+                    <dd><kbd class="rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 font-mono text-xs">/</kbd></dd>
+                </div>
+                <div class="flex items-center justify-between">
+                    <dt class="text-gray-600 dark:text-gray-400">Quick-add a card (on a board)</dt>
+                    <dd><kbd class="rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 font-mono text-xs">c</kbd></dd>
+                </div>
+                <div class="flex items-center justify-between">
+                    <dt class="text-gray-600 dark:text-gray-400">Close dialog / cancel</dt>
+                    <dd><kbd class="rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 font-mono text-xs">Esc</kbd></dd>
+                </div>
+                <div class="flex items-center justify-between">
+                    <dt class="text-gray-600 dark:text-gray-400">Show this help</dt>
+                    <dd><kbd class="rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 font-mono text-xs">?</kbd></dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
     {{-- Top navigation --}}
     <nav class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
