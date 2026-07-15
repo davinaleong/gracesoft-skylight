@@ -526,3 +526,30 @@ Validation:
 Notes:
 
 - Milestone 3 now has 3 of 5 items done (demo board, guided-wizard/checklist-widget combined, and this). Remaining: board templates, and this session hasn't yet done a fourth manual-verification pass to confirm the boards-index "no boards" CTA renders in a live browser (it's covered by an automated Pest assertion, which is sufficient given the pattern is identical to the columns CTA already verified live).
+
+## 2026-07-14 - Iteration 18 (Milestone 3)
+
+Implemented item:
+
+- Board templates (sprint board, content calendar, client onboarding, etc.)
+
+Changes made:
+
+- New `App\Services\BoardTemplates`: a static `TEMPLATES` array (no database table — these are fixed, developer-maintained templates, not user-editable, so a config-shaped class is simpler than a migration) with 4 entries: `blank` (no columns, the existing default behavior), `sprint` (Backlog/To Do/In Progress/Review/Done), `content_calendar` (Ideas/Writing/Editing/Scheduled/Published), `client_onboarding` (New Client/Kickoff/In Progress/Review/Complete). `isValid()` and `apply(Board $board, string $key)` (creates the template's columns in order on an already-created, column-less board).
+- `boards.index` Volt component: added a `template` property (default `'blank'`), validated against `Rule::in(array_keys(BoardTemplates::TEMPLATES))`, applied via `BoardTemplates::apply()` right after the board itself is created.
+- Create-board form UI: a 4-option template picker (styled radio buttons, `sprint`/`content_calendar`/`client_onboarding`/`blank`) between the description field and the submit button.
+
+Tests added/updated:
+
+- New `tests/Feature/BoardTemplatesTest.php` (4 tests): valid/invalid template key checks, blank template creates zero columns, content-calendar and client-onboarding templates create their columns in the correct order.
+- `tests/Feature/BoardsTest.php`: 3 new tests — creating a board without picking a template still defaults to blank (no columns), picking the `sprint` template creates exactly those 5 columns in order, and an unknown template key is rejected with a validation error rather than silently falling through.
+
+Validation:
+
+- Full suite: passing (179/179)
+- Pint (dirty): passing
+- Manual browser check: logged in as a real user, opened the create-board form, confirmed all 4 template options render, selected "Sprint board," submitted, and confirmed via both the boards list ("5 columns") and a direct `tinker` query that the new board's columns were exactly `Backlog, To Do, In Progress, Review, Done` in that order.
+
+Notes:
+
+- **Milestone 3 — Onboarding & First Impressions is now fully complete.** All 5 items checked off (two of them — guided wizard and checklist widget — intentionally delivered as one unified feature, noted in Iteration 16).

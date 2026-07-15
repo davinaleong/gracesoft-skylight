@@ -2,6 +2,8 @@
 
 use App\Concerns\AuthorizesWorkspaceEditing;
 use App\Models\Board;
+use App\Services\BoardTemplates;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 
@@ -11,6 +13,7 @@ new class extends Component {
     public bool $showCreateForm = false;
     public string $name = '';
     public string $description = '';
+    public string $template = 'blank';
 
     #[Computed]
     public function boards()
@@ -25,15 +28,18 @@ new class extends Component {
         $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
+            'template' => ['required', Rule::in(array_keys(BoardTemplates::TEMPLATES))],
         ]);
 
-        auth()->user()->boards()->create([
+        $board = auth()->user()->boards()->create([
             'name' => $this->name,
             'description' => $this->description,
             'position' => auth()->user()->boards()->count(),
         ]);
 
-        $this->reset('name', 'description', 'showCreateForm');
+        BoardTemplates::apply($board, $this->template);
+
+        $this->reset('name', 'description', 'template', 'showCreateForm');
     }
 
     public function delete(int $boardId): void
@@ -79,6 +85,20 @@ new class extends Component {
                     <label for="description" class="block text-sm font-medium mb-1.5">Description <span class="text-gray-400 font-normal">(optional)</span></label>
                     <textarea id="description" wire:model="description" rows="2" placeholder="What is this board for?"
                         class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3.5 py-2.5 text-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5">Starting template</label>
+                    <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        @foreach (\App\Services\BoardTemplates::TEMPLATES as $key => $definition)
+                            <label class="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition-colors {{ $template === $key ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : 'border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800' }}">
+                                <input type="radio" wire:model="template" value="{{ $key }}" class="sr-only">
+                                {{ $definition['label'] }}
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('template')
+                        <p class="mt-1.5 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="flex items-center gap-3">
                     <button type="submit" class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500">Create board</button>

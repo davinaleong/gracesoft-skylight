@@ -66,6 +66,45 @@ describe('boards index', function () {
             ->assertSee('No boards yet')
             ->assertSee('Create a board');
     });
+
+    it('creates a blank board with no columns by default', function () {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Volt::test('boards.index')
+            ->set('name', 'Blank Project')
+            ->call('create')
+            ->assertHasNoErrors();
+
+        $board = Board::where('name', 'Blank Project')->firstOrFail();
+        expect($board->columns)->toHaveCount(0);
+    });
+
+    it('creates a board pre-populated with a template\'s columns', function () {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Volt::test('boards.index')
+            ->set('name', 'Sprint 1')
+            ->set('template', 'sprint')
+            ->call('create')
+            ->assertHasNoErrors();
+
+        $board = Board::where('name', 'Sprint 1')->firstOrFail();
+        expect($board->columns->pluck('name')->all())
+            ->toBe(['Backlog', 'To Do', 'In Progress', 'Review', 'Done']);
+    });
+
+    it('rejects an unknown template key', function () {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Volt::test('boards.index')
+            ->set('name', 'Sprint 1')
+            ->set('template', 'not-a-real-template')
+            ->call('create')
+            ->assertHasErrors(['template']);
+    });
 });
 
 describe('boards show', function () {
