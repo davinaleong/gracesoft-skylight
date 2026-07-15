@@ -154,23 +154,35 @@ new class extends Component
         }
     }
 
-    public function updateCardOrder(int $columnId, array $orderedIds): void
+    /**
+     * A single round-trip for the whole drag-and-drop interaction: reposition
+     * every card in the destination column, and -- only for the card that
+     * actually moved -- update it through a real model instance so
+     * CardObserver still fires a card.moved activity event. The rest are
+     * bulk query-builder updates (no event spam for cards that just shifted
+     * position without changing columns).
+     *
+     * @param  array<int, int>  $orderedIds  Card ids in their new order within the destination column.
+     */
+    public function moveCard(int $cardId, int $toColumnId, array $orderedIds): void
     {
         $this->authorizeEdit($this->board);
 
-        $column = $this->board->columns()->findOrFail($columnId);
-        foreach ($orderedIds as $position => $id) {
-            $column->cards()->where('id', $id)->update(['position' => $position, 'column_id' => $columnId]);
-        }
-    }
-
-    public function moveCard(int $cardId, int $toColumnId, int $position): void
-    {
-        $this->authorizeEdit($this->board);
+        $newPosition = array_search($cardId, $orderedIds, true);
 
         Card::whereHas('column', fn ($q) => $q->where('board_id', $this->board->id))
             ->findOrFail($cardId)
-            ->update(['column_id' => $toColumnId, 'position' => $position]);
+            ->update(['column_id' => $toColumnId, 'position' => $newPosition]);
+
+        foreach ($orderedIds as $position => $id) {
+            if ($id === $cardId) {
+                continue;
+            }
+
+            Card::whereHas('column', fn ($q) => $q->where('board_id', $this->board->id))
+                ->where('id', $id)
+                ->update(['column_id' => $toColumnId, 'position' => $position]);
+        }
     }
 
     public function createLabel(): void
@@ -647,8 +659,7 @@ new class extends Component
                         const cardId = parseInt(evt.item.dataset.cardId);
                         const orderedIds = [...evt.to.querySelectorAll('[data-card-id]')]
                             .map(el => parseInt(el.dataset.cardId));
-                        $wire.moveCard(cardId, toColumnId, orderedIds.indexOf(cardId));
-                        $wire.updateCardOrder(toColumnId, orderedIds);
+                        $wire.moveCard(cardId, toColumnId, orderedIds);
                     }
                 });
                 this.cardSortables.push(sortable);

@@ -218,9 +218,29 @@ describe('boards show', function () {
         $this->actingAs($user);
 
         Volt::test('boards.show', ['board' => $board])
-            ->call('moveCard', $card->id, $col2->id, 0)
+            ->call('moveCard', $card->id, $col2->id, [$card->id])
             ->assertHasNoErrors();
 
         expect($card->fresh()->column_id)->toBe($col2->id);
+    });
+
+    it('repositions the rest of the destination column in one round-trip', function () {
+        $user = User::factory()->create();
+        $board = Board::factory()->create(['user_id' => $user->id]);
+        $col1 = Column::factory()->create(['board_id' => $board->id, 'position' => 0]);
+        $col2 = Column::factory()->create(['board_id' => $board->id, 'position' => 1]);
+        $moving = Card::factory()->create(['column_id' => $col1->id, 'position' => 0]);
+        $existingA = Card::factory()->create(['column_id' => $col2->id, 'position' => 0]);
+        $existingB = Card::factory()->create(['column_id' => $col2->id, 'position' => 1]);
+        $this->actingAs($user);
+
+        // Dropped in the middle: existingA, moving, existingB
+        Volt::test('boards.show', ['board' => $board])
+            ->call('moveCard', $moving->id, $col2->id, [$existingA->id, $moving->id, $existingB->id])
+            ->assertHasNoErrors();
+
+        expect($moving->fresh())->column_id->toBe($col2->id)->position->toBe(1);
+        expect($existingA->fresh()->position)->toBe(0);
+        expect($existingB->fresh()->position)->toBe(2);
     });
 });

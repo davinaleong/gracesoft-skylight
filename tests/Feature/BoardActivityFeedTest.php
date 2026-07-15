@@ -73,7 +73,7 @@ describe('board activity feed', function () {
         $card = Card::factory()->create(['column_id' => $col1->id, 'title' => 'Ship it']);
 
         Volt::test('boards.show', ['board' => $board])
-            ->call('moveCard', $card->id, $col2->id, 0);
+            ->call('moveCard', $card->id, $col2->id, [$card->id]);
 
         Volt::test('boards.activity', ['board' => $board])
             ->assertSee('moved card "Ship it" to Done');

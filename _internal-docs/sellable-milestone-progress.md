@@ -577,3 +577,31 @@ Validation:
 Notes:
 
 - Search is scoped to boards the user directly owns (`user_id`), same as `boards.index` and everywhere else in the app — a user who is only a *member* of someone else's workspace can't search that workspace's boards through this UI. This is the same known, previously-flagged gap (no workspace-wide board browsing yet) rather than a new limitation introduced here.
+
+## 2026-07-14 - Iteration 20 (Milestone 4)
+
+Implemented item:
+
+- Fast, smooth drag-and-drop (test Livewire perf; consider Alpine.js for drag interactions)
+
+Changes made:
+
+- Drag-and-drop was already client-side (SortableJS + Alpine, zero Livewire round-trips *during* the drag itself — only on drop), which is the right architecture and didn't need rebuilding. The one real perf issue: dropping a card fired **two** separate Livewire requests back-to-back (`moveCard` then `updateCardOrder`), each a full network round-trip + component re-render, for what is a single user action.
+- Merged them into one: `moveCard(int $cardId, int $toColumnId, array $orderedIds)` now both assigns the dragged card to its new column/position *and* repositions every other card in the destination column, in one call. Preserves the exact same activity-logging semantics as before: the moved card is updated through a real Eloquent model instance (`->update()`) so `CardObserver` still fires `card.moved`, while the other repositioned cards go through query-builder bulk updates (no event spam) — this distinction is what makes the merge safe rather than a straight refactor, since a naive combine would have either lost the `card.moved` event or spammed one `card.updated` per sibling card.
+- Updated the Alpine `onEnd` handler to fire a single `$wire.moveCard(cardId, toColumnId, orderedIds)` instead of two calls. Halves the network round-trips for every card drag (both cross-column moves and same-column reorders, since the old code fired both calls unconditionally either way).
+- Removed the now-dead `updateCardOrder` method.
+
+Tests added/updated:
+
+- `tests/Feature/BoardsTest.php`: updated the existing `moveCard` test to the new 3rd-argument signature (`array $orderedIds` instead of a single `int $position`), and added a new test asserting that dropping a card in the *middle* of a column with existing cards correctly repositions all three cards (the two pre-existing ones shift, the moved one lands where dropped) in that one call.
+- Updated the two other tests that called the old signature (`ActivityLogTest`, `BoardActivityFeedTest`) to match — both still pass, confirming `card.moved` activity logging survived the merge unchanged.
+
+Validation:
+
+- Full suite: passing (181/181)
+- Pint (dirty): passing
+- Manual browser check: since simulating a real SortableJS mouse-drag via browser automation is unreliable, verified the underlying mechanism directly — set up a two-column board with a card in a real browser session, called the Livewire component's `moveCard` method via its JS API (`Livewire.all().find(c => c.name === 'boards.show').$wire.moveCard(...)`, after first hitting the wrong component instance since the page also has `search.global` and `notifications.bell` components — corrected by targeting by name), and confirmed via `tinker` that the card's `column_id` and `position` updated correctly from a single call.
+
+Notes:
+
+- Keyboard shortcuts, filters, mobile-responsive audit, and loading/skeleton states are the remaining Milestone 4 items.

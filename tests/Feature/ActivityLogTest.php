@@ -110,7 +110,7 @@ describe('Card observer', function () {
         $this->actingAs($user);
 
         Volt::test('boards.show', ['board' => $board])
-            ->call('moveCard', $card->id, $col2->id, 0);
+            ->call('moveCard', $card->id, $col2->id, [$card->id]);
 
         $this->assertDatabaseHas('activity_logs', [
             'event' => 'card.moved',
