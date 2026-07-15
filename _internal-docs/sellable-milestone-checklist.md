@@ -45,7 +45,7 @@ _Goal: feels good to use daily, not just functional._
 - [x] Fast, smooth drag-and-drop (test Livewire perf; consider Alpine.js for drag interactions)
 - [x] Keyboard shortcuts (quick-add card, navigate columns, etc.)
 - [x] Global search across boards
-- [ ] Filters (label, assignee, due date, status)
+- [x] Filters (label, assignee, due date, status) — assignee skipped, no card-assignment feature exists in this app to filter on
 - [ ] Mobile-responsive layout audit (test on actual phone viewport)
 - [ ] Loading/skeleton states for slow actions
 

@@ -631,3 +631,31 @@ Validation:
 Notes:
 
 - "Navigate columns" from the checklist wording wasn't built as a distinct arrow-key column-focus system — there's no existing UI concept of column focus/selection to hook into, and adding one (a highlighted "current column" state, arrow-key navigation between columns, Enter-to-quick-add) is a meaningfully bigger feature than a single shortcut. Scoped this iteration to the two shortcuts that map directly onto existing actions (search, quick-add) rather than introducing new UI state for a checklist item phrased as "etc." Flagging as a reasonable follow-up rather than silently skipping it.
+
+## 2026-07-14 - Iteration 22 (Milestone 4)
+
+Implemented item:
+
+- Filters (label, assignee, due date, status)
+
+Changes made:
+
+- **Skipped "assignee" deliberately**: there is no card-assignment concept anywhere in this app (no `assigned_to` field, no UI for assigning a card to a person). Building a filter for a feature that doesn't exist would mean inventing the underlying feature itself — a real scope expansion, not a filter. Implemented filters for the three that map onto existing data: label, status (column), and due date.
+- `boards.show` Volt component: three new filter properties (`filterLabelIds`, `filterColumnIds`, `filterDue`), a `cardMatchesFilters(Card $card): bool` method (label = card has any of the selected labels; column = card's column is in the selected set; due = `overdue`/`due_today`/`no_due_date`/`all` against `ends_at`), `toggleLabelFilter()`, `hasActiveFilters()`, `clearFilters()`.
+- New "Filters" toggle button in the board header (same collapsible-panel convention as Share/Labels/Activity), showing a small indicator dot when any filter is active. The panel has three columns: label pills (click to toggle, matching the existing card-label-toggle visual style), column checkboxes (`wire:model.live` bound to the array property directly), and a due-date `<select>`.
+- The card `@foreach` loop in each column now iterates a filtered collection (`$column->cards->filter(fn ($card) => $this->cardMatchesFilters($card))`) instead of the raw relation. An empty column still says "No cards yet." but a column with cards that are all filtered out now says "No cards match your filters." instead — distinguishing "genuinely empty" from "hidden by your filters."
+- Filtering is entirely server-side (re-render on each filter change via Livewire, not client-side DOM hiding) — simpler to keep correct than duplicating the filter logic in JS, and consistent with how the rest of this board page already works (every other mutation is a Livewire round-trip).
+
+Tests added/updated:
+
+- New `tests/Feature/BoardFiltersTest.php` (7 tests): label filter shows only matching cards, toggling the same label twice clears it, column/status filter shows only cards in the selected column(s), due-date filter for `overdue` and `no_due_date`, label+column filters combine with AND semantics (not OR across filter types), and `hasActiveFilters()`/`clearFilters()` correctly reflect and reset all three filter properties together.
+
+Validation:
+
+- Full suite: passing (191/191)
+- Pint (dirty): passing
+- Manual browser check: created a board with one labeled and one unlabeled card, opened the Filters panel in the real UI, confirmed the label/column/due-date controls render, toggled the "Urgent" label filter via the Livewire component directly (`Livewire.all().find(c => c.name === 'boards.show').$wire...` — plain DOM clicks were ambiguous since the *same* label name also appears as a per-card label-toggle button, so a naive `querySelector` grabbed the wrong one; this was a test-methodology snag, not an app bug, and toggled a card's label as a side effect, which was harmless since it's disposable QA data cleaned up afterward), confirmed the non-matching card disappeared from the board, then called `clearFilters()` and confirmed both cards reappeared and the "Clear all" button disappeared.
+
+Notes:
+
+- Milestone 4 remaining: mobile-responsive layout audit, loading/skeleton states.

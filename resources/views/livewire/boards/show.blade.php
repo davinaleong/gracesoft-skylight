@@ -49,6 +49,17 @@ new class extends Component
     // Activity feed
     public bool $showActivity = false;
 
+    // Filters
+    public bool $showFilters = false;
+
+    /** @var array<int, int> */
+    public array $filterLabelIds = [];
+
+    /** @var array<int, int> */
+    public array $filterColumnIds = [];
+
+    public string $filterDue = 'all';
+
     public function mount(Board $board): void
     {
         $this->board = $board;
@@ -219,6 +230,46 @@ new class extends Component
 
         $card->labels()->toggle($labelId);
     }
+
+    public function cardMatchesFilters(Card $card): bool
+    {
+        if (! empty($this->filterColumnIds) && ! in_array($card->column_id, $this->filterColumnIds, true)) {
+            return false;
+        }
+
+        if (! empty($this->filterLabelIds)) {
+            $cardLabelIds = $card->labels->pluck('id')->all();
+            if (empty(array_intersect($this->filterLabelIds, $cardLabelIds))) {
+                return false;
+            }
+        }
+
+        return match ($this->filterDue) {
+            'overdue' => $card->ends_at && $card->ends_at->isPast(),
+            'due_today' => $card->ends_at && $card->ends_at->isToday(),
+            'no_due_date' => ! $card->ends_at,
+            default => true,
+        };
+    }
+
+    public function toggleLabelFilter(int $labelId): void
+    {
+        if (in_array($labelId, $this->filterLabelIds, true)) {
+            $this->filterLabelIds = array_values(array_diff($this->filterLabelIds, [$labelId]));
+        } else {
+            $this->filterLabelIds[] = $labelId;
+        }
+    }
+
+    public function hasActiveFilters(): bool
+    {
+        return ! empty($this->filterLabelIds) || ! empty($this->filterColumnIds) || $this->filterDue !== 'all';
+    }
+
+    public function clearFilters(): void
+    {
+        $this->reset('filterLabelIds', 'filterColumnIds', 'filterDue');
+    }
 };
 ?>
 
@@ -279,6 +330,17 @@ new class extends Component
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
                 Activity
+            </button>
+            <button wire:click="$toggle('showFilters')"
+                class="relative inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-sm font-medium transition-colors {{ $this->hasActiveFilters() ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : 'border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800' }}"
+            >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" />
+                </svg>
+                Filters
+                @if ($this->hasActiveFilters())
+                    <span class="h-1.5 w-1.5 rounded-full bg-indigo-500"></span>
+                @endif
             </button>
             <button
                 wire:click="$set('showColumnForm', true)"
@@ -371,6 +433,77 @@ new class extends Component
         </div>
     @endif
 
+    {{-- Filters panel --}}
+    @if ($showFilters)
+        <div class="mb-6 rounded-xl bg-white dark:bg-gray-900 p-5 shadow-sm ring-1 ring-gray-200 dark:ring-gray-800">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-base font-semibold">Filters</h2>
+                <div class="flex items-center gap-3">
+                    @if ($this->hasActiveFilters())
+                        <button wire:click="clearFilters" class="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+                            Clear all
+                        </button>
+                    @endif
+                    <button wire:click="$set('showFilters', false)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid gap-5 sm:grid-cols-3">
+                {{-- Label filter --}}
+                <div>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Label</p>
+                    @if ($boardLabels->isEmpty())
+                        <p class="text-xs text-gray-400">No labels on this board.</p>
+                    @else
+                        <div class="flex flex-wrap gap-1.5">
+                            @foreach ($boardLabels as $label)
+                                <button
+                                    type="button"
+                                    wire:click="toggleLabelFilter({{ $label->id }})"
+                                    class="rounded-full px-2.5 py-1 text-xs font-medium text-white transition-opacity {{ in_array($label->id, $filterLabelIds) ? 'opacity-100 ring-2 ring-offset-1 ring-gray-400 dark:ring-offset-gray-900' : 'opacity-40 hover:opacity-70' }}"
+                                    style="background-color: {{ $label->color }}"
+                                >
+                                    {{ $label->name }}
+                                </button>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Column/status filter --}}
+                <div>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Status (column)</p>
+                    <div class="space-y-1.5">
+                        @foreach ($boardColumns as $column)
+                            <label class="flex items-center gap-2 text-sm">
+                                <input
+                                    type="checkbox"
+                                    wire:model.live="filterColumnIds"
+                                    value="{{ $column->id }}"
+                                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                >
+                                {{ $column->name }}
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Due date filter --}}
+                <div>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Due date</p>
+                    <select wire:model.live="filterDue" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="all">All cards</option>
+                        <option value="overdue">Overdue</option>
+                        <option value="due_today">Due today</option>
+                        <option value="no_due_date">No due date</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- Kanban board --}}
     <div
         class="flex gap-4 overflow-x-auto pb-6"
@@ -428,11 +561,15 @@ new class extends Component
                     data-sortable-cards
                     data-column-id="{{ $column->id }}"
                 >
+                    @php $visibleCards = $column->cards->filter(fn ($card) => $this->cardMatchesFilters($card)); @endphp
+
                     @if ($column->cards->isEmpty())
                         <p class="px-1 py-2 text-xs text-gray-400">No cards yet.</p>
+                    @elseif ($visibleCards->isEmpty())
+                        <p class="px-1 py-2 text-xs text-gray-400">No cards match your filters.</p>
                     @endif
 
-                    @foreach ($column->cards as $card)
+                    @foreach ($visibleCards as $card)
                         <div
                             class="group/card rounded-lg p-3 shadow-xs ring-1 ring-gray-200 dark:ring-gray-700 {{ $card->color ? '' : 'bg-white dark:bg-gray-900' }}"
                             data-card-id="{{ $card->id }}"
