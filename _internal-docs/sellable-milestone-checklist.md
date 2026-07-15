@@ -46,7 +46,7 @@ _Goal: feels good to use daily, not just functional._
 - [x] Keyboard shortcuts (quick-add card, navigate columns, etc.)
 - [x] Global search across boards
 - [x] Filters (label, assignee, due date, status) — assignee skipped, no card-assignment feature exists in this app to filter on
-- [ ] Mobile-responsive layout audit (test on actual phone viewport)
+- [x] Mobile-responsive layout audit (test on actual phone viewport)
 - [ ] Loading/skeleton states for slow actions
 
 ## Milestone 5 — Differentiator: Client Portals

@@ -659,3 +659,31 @@ Validation:
 Notes:
 
 - Milestone 4 remaining: mobile-responsive layout audit, loading/skeleton states.
+
+## 2026-07-14 - Iteration 23 (Milestone 4)
+
+Implemented item:
+
+- Mobile-responsive layout audit (test on actual phone viewport)
+
+Changes made:
+
+- Used the Browser pane's mobile preset (375×812) against a real logged-in session to audit every main authenticated page, checking `document.documentElement.scrollWidth` vs `clientWidth` on each as the objective "is this page actually overflowing" signal, not just eyeballing screenshots. Found and fixed two real bugs, confirmed the rest were already fine:
+    - **Top nav bar** (`components/layouts/app.blade.php`): `flex flex-nowrap` forced the logo, full search bar, and all action buttons (dark-mode toggle, notifications, Team, username, Sign out) onto one unbreakable row, squeezing the search input down to ~110px and truncating its placeholder. Changed to `flex flex-wrap ... sm:flex-nowrap`: actions now sit on their own row (search reordered via `order-3`/`sm:order-none` to fall below on mobile, back inline on `sm:`+), and the username text is hidden below `sm:` (`hidden sm:inline`) since it's redundant with the avatar-less "Sign out" button right next to it and was the least essential element competing for space.
+    - **Board page header** (`boards/show.blade.php`): `flex items-center justify-between` with no wrap on both the title row and the Share/Labels/Activity/Filters/Add-column button row caused genuine page-level horizontal overflow — confirmed via `scrollWidth: 627` vs `clientWidth: 375` before the fix. Changed both to `flex-wrap` (title row: `gap-y-3`, button row: unchanged gap), added `truncate` to the board name (`<h1>`) and `min-w-0`/`shrink-0` to its flex siblings so a long board name can't itself force overflow. After the fix: `scrollWidth: 375` — no page-level scroll at all, buttons wrap onto a second row, title stays on one line.
+    - Verified (no changes needed): the login/register pages, the Team page, the Profile page, the card-detail modal (already correctly capped via `max-w-2xl` + `p-4`), and the Filters panel (`grid gap-5 sm:grid-cols-3` already stacks to one column below `sm`) — all measured `scrollWidth === clientWidth` at 375px.
+    - The kanban columns themselves are *intentionally* still horizontally scrollable on mobile (`overflow-x-auto` on the board canvas) — that's the correct, expected pattern for a multi-column board on a narrow screen, distinct from the page-level overflow bugs that were actually fixed.
+
+Tests added/updated:
+
+- New `tests/Feature/MobileResponsivenessTest.php` (2 tests): asserts the specific `flex-wrap` class combinations are present in the rendered nav and board-header HTML, as a lightweight regression guard against these two fixes being silently reverted. (Pest can't measure real `scrollWidth`/viewport layout — that verification happened live in the browser, documented below.)
+
+Validation:
+
+- Full suite: passing (193/193)
+- Pint (dirty): passing
+- Manual browser check: this iteration *is* the manual verification — audited `/home`, a board page, `/team`, `/profile`, and the card-detail modal at a real 375×812 viewport with a logged-in session, using `scrollWidth` vs `clientWidth` as the pass/fail signal rather than just screenshots (screenshots also taken and visually confirm the before/after: nav actions cramped onto one line → wrapped onto their own row with a full-width search bar below; board header buttons cut off mid-word → wrapped cleanly onto a second row).
+
+Notes:
+
+- Milestone 4 remaining: loading/skeleton states for slow actions.
