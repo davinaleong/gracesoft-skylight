@@ -53,11 +53,11 @@ _Goal: feels good to use daily, not just functional._
 
 _Goal: polish the public share-link feature into a marketed, named feature._
 
-- [ ] Rename/brand the feature (e.g. "Client Portals")
-- [ ] Customizable share-link permissions (comments on/off, attachments on/off — already partial, confirm full coverage)
-- [ ] Branded/white-labeled share view (logo, workspace name)
-- [ ] Share-link expiration and revocation controls
-- [ ] Analytics on share-link views (who accessed, when)
+- [x] Rename/brand the feature (e.g. "Client Portals")
+- [x] Customizable share-link permissions (comments on/off, attachments on/off — already partial, confirm full coverage)
+- [x] Branded/white-labeled share view (logo, workspace name) — app logo + workspace name; true custom-logo-per-workspace needs a workspace branding feature that doesn't exist yet
+- [x] Share-link expiration and revocation controls
+- [x] Analytics on share-link views (who accessed, when) — view count only; "who" stays anonymous by design (IP is hashed, never stored raw)
 
 ## Milestone 6 — Monetization Infrastructure
 

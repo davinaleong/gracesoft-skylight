@@ -312,7 +312,7 @@ new class extends Component
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
                 </svg>
-                Share
+                Client Portal
             </button>
             <button wire:click="$toggle('showLabelManager')"
                 class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3.5 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
@@ -354,11 +354,11 @@ new class extends Component
         </div>
     </div>
 
-    {{-- Share links panel --}}
+    {{-- Client portal (share links) panel --}}
     @if ($showSharePanel)
         <div class="mb-6 rounded-xl bg-white dark:bg-gray-900 p-5 shadow-sm ring-1 ring-gray-200 dark:ring-gray-800">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-base font-semibold">Share board</h2>
+                <h2 class="text-base font-semibold">Client Portal</h2>
                 <button wire:click="$set('showSharePanel', false)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
                 </button>

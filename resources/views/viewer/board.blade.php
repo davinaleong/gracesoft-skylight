@@ -14,9 +14,9 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 antialiased">
-    {{-- Viewer banner --}}
+    {{-- Client Portal banner --}}
     <div class="bg-indigo-600 px-4 py-2 text-center text-sm text-white">
-        Read-only view &middot; Shared by the board owner
+        Client Portal &middot; Read-only view shared by {{ $board->workspace->name }}
     </div>
 
     @php
@@ -28,6 +28,14 @@
         @keydown.escape.window="if (lightboxUrl) { lightboxUrl = null; lightboxName = ''; } else { openCardId = null; }"
         class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8"
     >
+        {{-- Branded header --}}
+        <div class="mb-8 flex items-center gap-3">
+            <img src="{{ asset('wm.svg') }}" alt="{{ config('app.name', 'Skylight') }}" class="h-6 dark:hidden">
+            <img src="{{ asset('wm-w.svg') }}" alt="{{ config('app.name', 'Skylight') }}" class="hidden h-6 dark:block">
+            <span class="text-gray-300 dark:text-gray-700">/</span>
+            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ $board->workspace->name }}</span>
+        </div>
+
         {{-- Board title --}}
         <h1 class="mb-8 text-2xl font-semibold">{{ $board->name }}</h1>
 

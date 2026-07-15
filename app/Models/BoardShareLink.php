@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['board_id', 'token_hash', 'can_see_comments', 'can_see_attachments', 'revoked_at'])]
+#[Fillable(['board_id', 'token_hash', 'can_see_comments', 'can_see_attachments', 'revoked_at', 'expires_at'])]
 #[Hidden(['token_hash'])]
 class BoardShareLink extends Model
 {
@@ -27,9 +27,14 @@ class BoardShareLink extends Model
         return $this->revoked_at !== null;
     }
 
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->isPast();
+    }
+
     public function isActive(): bool
     {
-        return ! $this->isRevoked();
+        return ! $this->isRevoked() && ! $this->isExpired();
     }
 
     /**
@@ -49,13 +54,15 @@ class BoardShareLink extends Model
     }
 
     /**
-     * Find an active share link by its raw token.
+     * Find an active (not revoked, not expired) share link by its raw token.
      */
     public static function findByToken(string $token): ?self
     {
-        return static::where('token_hash', hash('sha256', $token))
+        $link = static::where('token_hash', hash('sha256', $token))
             ->whereNull('revoked_at')
             ->first();
+
+        return $link && ! $link->isExpired() ? $link : null;
     }
 
     protected function casts(): array
@@ -64,6 +71,7 @@ class BoardShareLink extends Model
             'can_see_comments' => 'boolean',
             'can_see_attachments' => 'boolean',
             'revoked_at' => 'datetime',
+            'expires_at' => 'datetime',
         ];
     }
 }

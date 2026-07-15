@@ -70,6 +70,7 @@ Route::middleware(['throttle:viewer'])->group(function () {
         ActivityLogger::log('share_link.accessed', $link->board, null, null);
 
         $relations = [
+            'workspace',
             'columns.cards.labels',
             'columns.cards.checklists.items',
         ];

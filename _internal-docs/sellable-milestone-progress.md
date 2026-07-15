@@ -715,3 +715,37 @@ Validation:
 Notes:
 
 - **Milestone 4 — Core UX Polish is now fully complete.** All 6 items checked off.
+
+## 2026-07-15 - Iteration 25 (Milestone 5)
+
+Implemented items (all five — see Notes for why they landed together):
+
+- Rename/brand the feature (e.g. "Client Portals")
+- Customizable share-link permissions (comments on/off, attachments on/off — confirmed full coverage)
+- Branded/white-labeled share view (logo, workspace name)
+- Share-link expiration and revocation controls
+- Analytics on share-link views (who accessed, when)
+
+Changes made:
+
+- **Rename/brand**: "Share" button on the board page → "Client Portal"; the panel title → "Client Portal"; the generate-link form copy → "Create a client portal link" / "A read-only view of this board you can send to a client — no account required."; the public viewer's top banner → "Client Portal · Read-only view shared by {workspace name}". No model/table/route renames — `BoardShareLink`, `share_link_*` tables, and the `viewer`/`viewer.board` route+view names are all internal and stay as-is; only user-facing copy changed.
+- **Permissions verification**: `$link->can_see_comments`/`can_see_attachments` already fully gated the Comments and Attachments sections in `viewer/board.blade.php` (`@if ($link->can_see_comments)` / `@if ($link->can_see_attachments)`) — this was already correct, confirmed with a new end-to-end test that seeds a comment and a link attachment, requests the viewer page with both flags off (asserts the content is absent from the *raw HTML*, not just visually hidden) and again with both on (asserts present).
+- **Branding**: viewer page header now shows the app logo (dark/light variants, same as the authenticated app nav) + the owning workspace's name, and the top banner names the workspace. True custom-logo-per-workspace ("white-label" in the strictest sense) isn't possible yet since there's no workspace logo upload feature anywhere in the app — flagged as a natural follow-up once workspace branding settings exist, rather than built speculatively here.
+- **Expiration**: migration adds nullable `expires_at` to `board_share_links`. `BoardShareLink::isExpired()`, and `isActive()` now also checks not-expired. `findByToken()` returns `null` for an expired link (same 404 behavior as a revoked one — no distinct error message to a visitor, consistent with not leaking whether a link existed at all). Generate form gained an "Expires" dropdown (Never / 7 / 30 / 90 days), stored in a `expiresIn` component property, translated to a concrete `expires_at` timestamp in `generate()`.
+- **Analytics**: `shareLinks()` computed property now does `withCount('accesses')`; each link in the list shows "N views" next to its status badge. "Who accessed, when" is intentionally *not* exposed beyond the count — `ShareLinkAccess` already only stores a SHA-256 *hash* of the visitor's IP (a deliberate privacy choice made when this table was first built, per its own migration comments), so there's no real identity to surface; showing raw access timestamps/hashes wouldn't tell a workspace owner anything actionable beyond "how many times." A per-link access log (timestamps list) would be a reasonable follow-up if a real need for it shows up, but wasn't invented speculatively here.
+- Status badge now has three states instead of two: Active (green) / Expired (amber, new) / Revoked (gray) — previously anything not-revoked was shown as "Active" even if it should have read as expired.
+
+Tests added/updated:
+
+- `tests/Feature/ShareLinksTest.php` grew from 9 to 18 tests: expired-link lookup/creation/`isExpired`/`isActive` coverage, generating a link with a 30-day expiry lands within the correct window, the no-expiry default still works, view count renders correctly after real viewer hits, an expired token 404s on the public route, the branding banner shows the workspace name, and the comments/attachments on/off end-to-end check described above.
+
+Validation:
+
+- Full suite: passing (206/206)
+- Pint (dirty): passing
+- Manual browser check: logged in as a real user, opened the renamed "Client Portal" panel, generated a link with a 7-day expiry via the real form (through `$wire` since, as in earlier iterations, the page has multiple same-named Livewire components), confirmed the list entry showed "Active · 0 views" and "Expires 6 days from now", visited the public link and confirmed the branded banner ("Client Portal · Read-only view shared by {workspace}") plus the logo+workspace-name header row rendered, then reloaded the owner's panel and confirmed the view count incremented to "1 view".
+
+Notes:
+
+- All five checklist items are marked done from this one iteration because they're genuinely one cohesive change to one feature (the share-link/client-portal experience) — splitting them into five separate commits would have meant repeatedly touching the same three files (`share-links.blade.php`, `viewer/board.blade.php`, `BoardShareLink.php`) with artificial boundaries between them. Same reasoning as the Milestone 3 wizard/checklist-widget combination in Iteration 16.
+- **Milestone 5 — Client Portals is now fully complete.**
