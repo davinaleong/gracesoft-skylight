@@ -47,7 +47,7 @@ _Goal: feels good to use daily, not just functional._
 - [x] Global search across boards
 - [x] Filters (label, assignee, due date, status) — assignee skipped, no card-assignment feature exists in this app to filter on
 - [x] Mobile-responsive layout audit (test on actual phone viewport)
-- [ ] Loading/skeleton states for slow actions
+- [x] Loading/skeleton states for slow actions
 
 ## Milestone 5 — Differentiator: Client Portals
 

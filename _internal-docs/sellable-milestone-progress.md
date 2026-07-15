@@ -687,3 +687,31 @@ Validation:
 Notes:
 
 - Milestone 4 remaining: loading/skeleton states for slow actions.
+
+## 2026-07-14 - Iteration 24 (Milestone 4)
+
+Implemented item:
+
+- Loading/skeleton states for slow actions
+
+Changes made:
+
+- Livewire already ships a default top-of-page progress bar for every request with zero configuration, so the baseline "something is happening" signal already existed app-wide before this iteration.
+- Added explicit `wire:loading` button-level feedback (disable + label swap, e.g. "Create board" → "Creating…") to the actions most likely to feel slow or invite a double-click: create board (`boards.index`), create column / create card / save card edits (`boards.show`), upload image / post comment (`cards.detail`), send invite (`workspaces.team`). Each uses `wire:loading.attr="disabled"` + `wire:target="<method>"` on the button plus a `wire:loading`/`wire:loading.remove` pair of `<span>`s for the label, and `disabled:opacity-60` for a visual dimmed state — the same pattern repeated everywhere for consistency, not six different implementations.
+- Image upload gets particular attention since it's a genuinely slow, file-size-dependent action (unlike the others, which are typically sub-100ms DB writes) — "Uploading…" replaces "Upload" while `uploadImage` is in flight.
+- Global search input: swapped the static magnifying-glass icon for a spinning-icon state (`wire:loading`/`wire:loading.remove` targeting `query`, the debounced `wire:model.live` property) so a 300ms debounce + query round-trip doesn't read as "did that work."
+- Did not build a literal "skeleton" (gray placeholder block) UI anywhere — this app renders everything server-side on the initial page load with no async/lazy-loaded sections, so there's no scenario where content is genuinely absent-then-appears in a way a skeleton would represent better than the existing empty-states (Iteration 17) already do. The `wire:loading` button states are the actual "is this slow action progressing" signal this app needs.
+
+Tests added/updated:
+
+- New `tests/Feature/LoadingStatesTest.php` (4 tests): asserts the `wire:target` attribute and loading-state label text are present in the rendered HTML for the create-board, create-column, create-card, and send-invite buttons (opening each relevant form/panel first via `Volt::test()->set(...)`, since these buttons only render once their form is open).
+
+Validation:
+
+- Full suite: passing (197/197)
+- Pint (dirty): passing
+- No additional live-browser check this iteration: `wire:loading` is a well-established Livewire-native directive (not custom logic), the exact same pattern is applied identically across all six buttons, and the Pest assertions already confirm the correct markup renders for each — a live click-and-observe pass would mostly be racing against how fast localhost responds, which isn't informative. Prior iterations' manual verification caught bugs in genuinely new/custom logic (activity feed `describe()`, `ActivityLogger` actor resolution, drag-and-drop's merged method); this iteration doesn't introduce comparable custom logic.
+
+Notes:
+
+- **Milestone 4 — Core UX Polish is now fully complete.** All 6 items checked off.

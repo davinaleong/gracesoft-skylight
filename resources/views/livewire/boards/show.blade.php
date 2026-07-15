@@ -603,7 +603,10 @@ new class extends Component
                                         </div>
                                     </div>
                                     <div class="flex gap-2">
-                                        <button type="submit" class="text-xs rounded bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 font-medium">Save</button>
+                                        <button type="submit" wire:loading.attr="disabled" wire:target="saveCard" class="text-xs rounded bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 font-medium disabled:opacity-60">
+                                            <span wire:loading.remove wire:target="saveCard">Save</span>
+                                            <span wire:loading wire:target="saveCard">Saving…</span>
+                                        </button>
                                         <button type="button" wire:click="$set('editingCard', null)" class="text-xs rounded border border-gray-300 dark:border-gray-700 px-2.5 py-1">Cancel</button>
                                     </div>
                                     {{-- Colour picker --}}
@@ -688,7 +691,10 @@ new class extends Component
                                 <p class="text-xs text-red-600">{{ $message }}</p>
                             @enderror
                             <div class="flex gap-2">
-                                <button type="submit" class="text-xs rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 font-medium">Add card</button>
+                                <button type="submit" wire:loading.attr="disabled" wire:target="createCard" class="text-xs rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 font-medium disabled:opacity-60">
+                                    <span wire:loading.remove wire:target="createCard">Add card</span>
+                                    <span wire:loading wire:target="createCard">Adding…</span>
+                                </button>
                                 <button type="button" wire:click="$set('addingCardToColumn', null)" class="text-xs rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5">Cancel</button>
                             </div>
                         </form>
@@ -722,7 +728,10 @@ new class extends Component
                         <p class="text-xs text-red-600">{{ $message }}</p>
                     @enderror
                     <div class="flex gap-2">
-                        <button type="submit" class="text-xs rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 font-medium">Add column</button>
+                        <button type="submit" wire:loading.attr="disabled" wire:target="createColumn" class="text-xs rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 font-medium disabled:opacity-60">
+                            <span wire:loading.remove wire:target="createColumn">Add column</span>
+                            <span wire:loading wire:target="createColumn">Adding…</span>
+                        </button>
                         <button type="button" wire:click="$set('showColumnForm', false)" class="text-xs rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5">Cancel</button>
                     </div>
                 </form>

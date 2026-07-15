@@ -504,8 +504,9 @@ new class extends Component {
                 </div>
             </div>
             @error('newCommentBody') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
-            <button type="submit" class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors">
-                Post comment
+            <button type="submit" wire:loading.attr="disabled" wire:target="addComment" class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors disabled:opacity-60">
+                <span wire:loading.remove wire:target="addComment">Post comment</span>
+                <span wire:loading wire:target="addComment">Posting…</span>
             </button>
         </form>
 
@@ -575,8 +576,9 @@ new class extends Component {
                 @error('imageUpload') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
             @if ($imageUpload)
-                <button type="submit" class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-xs font-medium text-white">
-                    Upload
+                <button type="submit" wire:loading.attr="disabled" wire:target="uploadImage" class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60">
+                    <span wire:loading.remove wire:target="uploadImage">Upload</span>
+                    <span wire:loading wire:target="uploadImage">Uploading…</span>
                 </button>
             @endif
         </form>

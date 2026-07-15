@@ -101,7 +101,15 @@ new class extends Component {
                     @enderror
                 </div>
                 <div class="flex items-center gap-3">
-                    <button type="submit" class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500">Create board</button>
+                    <button
+                        type="submit"
+                        wire:loading.attr="disabled"
+                        wire:target="create"
+                        class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                    >
+                        <span wire:loading.remove wire:target="create">Create board</span>
+                        <span wire:loading wire:target="create">Creating…</span>
+                    </button>
                     <button type="button" wire:click="$set('showCreateForm', false)" class="rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancel</button>
                 </div>
             </form>

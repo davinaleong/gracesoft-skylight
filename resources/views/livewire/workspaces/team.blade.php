@@ -221,8 +221,9 @@ new class extends Component {
                         <option value="{{ $roleOption }}">{{ ucfirst($roleOption) }}</option>
                     @endforeach
                 </select>
-                <button type="submit" class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-medium text-white shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    Send invite
+                <button type="submit" wire:loading.attr="disabled" wire:target="invite" class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-medium text-white shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60">
+                    <span wire:loading.remove wire:target="invite">Send invite</span>
+                    <span wire:loading wire:target="invite">Sending…</span>
                 </button>
             </form>
         </div>
