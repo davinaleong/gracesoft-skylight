@@ -60,4 +60,26 @@ describe('global search', function () {
             ->set('query', 'Secret')
             ->assertDontSee('Secret Board');
     });
+
+    it('finds matching cards across multiple different boards in one search', function () {
+        $user = User::factory()->create();
+        $boardA = Board::factory()->create(['user_id' => $user->id, 'name' => 'Marketing']);
+        $boardB = Board::factory()->create(['user_id' => $user->id, 'name' => 'Engineering']);
+        $columnA = Column::factory()->create(['board_id' => $boardA->id]);
+        $columnB = Column::factory()->create(['board_id' => $boardB->id]);
+        Card::factory()->create(['column_id' => $columnA->id, 'title' => 'Launch campaign']);
+        Card::factory()->create(['column_id' => $columnB->id, 'title' => 'Launch database migration']);
+
+        $this->actingAs($user);
+
+        $component = Volt::test('search.global')
+            ->set('open', true)
+            ->set('query', 'Launch')
+            ->assertSee('Launch campaign')
+            ->assertSee('Launch database migration');
+
+        $cards = $component->get('results')['cards'];
+        expect($cards->pluck('column.board.name')->unique()->sort()->values()->all())
+            ->toBe(['Engineering', 'Marketing']);
+    });
 });

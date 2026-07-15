@@ -553,3 +553,27 @@ Validation:
 Notes:
 
 - **Milestone 3 — Onboarding & First Impressions is now fully complete.** All 5 items checked off (two of them — guided wizard and checklist widget — intentionally delivered as one unified feature, noted in Iteration 16).
+
+## 2026-07-14 - Iteration 19 (Milestone 4)
+
+Implemented item:
+
+- Global search across boards
+
+Changes made:
+
+- No new production code: `resources/views/livewire/search/global.blade.php` already queries `Board::where('user_id', $userId)` and `Card::whereHas('column.board', fn ($q) => $q->where('user_id', $userId))` — i.e. across every board the user owns, not scoped to whichever board they're currently viewing (it's the top-nav search bar, present on every authenticated page via the app layout). This was already fully built (Milestone 9 of the original, non-sellable `milestone-checklist.md`) and just hadn't been checked off on the *sellable* checklist.
+- This iteration was a verification-only pass.
+
+Tests added/updated:
+
+- Added to `tests/Feature/SearchTest.php`: a test confirming a single query returns matching cards from **two different boards** in one result set, with a `results['cards']` assertion that the returned cards actually span both board names — making the "across boards" claim airtight rather than inferred from separate single-board tests.
+
+Validation:
+
+- Full suite: passing (180/180)
+- Pint (dirty): passing
+
+Notes:
+
+- Search is scoped to boards the user directly owns (`user_id`), same as `boards.index` and everywhere else in the app — a user who is only a *member* of someone else's workspace can't search that workspace's boards through this UI. This is the same known, previously-flagged gap (no workspace-wide board browsing yet) rather than a new limitation introduced here.
