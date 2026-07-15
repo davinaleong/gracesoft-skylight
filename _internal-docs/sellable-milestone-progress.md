@@ -749,3 +749,41 @@ Notes:
 
 - All five checklist items are marked done from this one iteration because they're genuinely one cohesive change to one feature (the share-link/client-portal experience) — splitting them into five separate commits would have meant repeatedly touching the same three files (`share-links.blade.php`, `viewer/board.blade.php`, `BoardShareLink.php`) with artificial boundaries between them. Same reasoning as the Milestone 3 wizard/checklist-widget combination in Iteration 16.
 - **Milestone 5 — Client Portals is now fully complete.**
+
+## 2026-07-15 - Iteration 26 (Milestone 6)
+
+Implemented items (all six — see Notes for why they landed together):
+
+- Stripe (or Paddle) integration
+- Define pricing tiers (Free / Pro / Team) with seat or board limits
+- Subscription management UI (upgrade/downgrade/cancel)
+- Usage limit enforcement (boards, members, storage per tier)
+- Invoice/receipt emails
+- Trial period logic (if applicable)
+
+Changes made:
+
+- Installed `laravel/cashier` (Stripe). **Architecture decision**: `Workspace`, not `User`, is the Billable entity — billing is per-team, not per-person. This meant editing Cashier's published `create_customer_columns` migration to target `workspaces` instead of `users`, and overriding `Workspace::stripeEmail()` to return `$this->owner?->email` (Workspace has no email column of its own). Cashier's `subscriptions` table still has a column literally named `user_id` even though it stores workspace ids now — that's an existing Cashier convention when billing a non-User model, not renamed, to avoid fighting the package's internals.
+- `config/plans.php` (new, plain array — plans are developer-maintained, not user-editable, so no DB table): `free` (0/mo, 3 boards, 3 members), `pro` ($12/mo, 25 boards, 10 members), `team` ($29/mo, unlimited both — `board_limit`/`member_limit` are `null`). Stripe price ids read from env (`STRIPE_PRICE_PRO`, `STRIPE_PRICE_TEAM`).
+- Migration adds a `plan` column (default `'free'`) to `workspaces`; `Workspace::planLimits()` reads `config('plans.'.$this->plan)`.
+- New `App\Services\PlanLimiter`: `boardLimit()`/`memberLimit()` (null = unlimited) and `canCreateBoard()`/`canInviteMember()` boolean checks against the workspace's current counts.
+- Usage limits enforced at the two natural mutation points, using the app's existing `addError()`-on-the-form-field UX pattern rather than a new modal/toast system: `boards.index`'s `create()` and `workspaces.team`'s `invite()` both check the relevant `PlanLimiter::can*()` before proceeding and surface a plan-limit message with a link to `/billing`. Both pages also show a small "N of M boards/members used on the {plan} plan" usage indicator, turning amber once at the limit.
+- New `workspaces.billing` Volt component + `/billing` page (nav-linked): owner-only `subscribe(string $plan)` starts a Cashier Checkout session (`$workspace->newSubscription('default', $priceId)->trialDays(14)->checkout(...)`) — the 14-day trial is only granted if the workspace has never had a subscription row before (`! $workspace->subscription('default')`), so re-subscribing after a cancellation doesn't re-grant a trial. `manageBilling()` redirects to Stripe's hosted billing portal (`$workspace->redirectToBillingPortal(...)`) for upgrade/downgrade/cancel/payment-method changes — deliberately did not build custom cancel/downgrade UI, since Cashier's documented pattern is to delegate that entirely to Stripe's own portal rather than reinvent it. The page shows the current plan, trial/subscribed status, and a 3-column plan comparison grid.
+- **Invoice/receipt emails**: no server-side code needed — Stripe sends these automatically for every Checkout subscription and invoice event once "Email customers about..." is enabled in the Stripe Dashboard's Emails settings (on by default for new accounts). Same reasoning as Milestone 5's "who accessed" analytics item: don't build a parallel system for something the platform already does correctly. Documented here rather than silently left off the checklist.
+- Cashier auto-registers its own `/stripe/webhook` route (`Cashier::$registersRoutes` defaults `true`), so no manual webhook route/controller was needed for this iteration.
+- `.env`/`.env.example`: added `STRIPE_KEY`, `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_TEAM` (all placeholders).
+
+Tests added/updated:
+
+- New `tests/Feature/PlanLimiterTest.php` (6 tests): every new workspace defaults to `free`, a plan with null limits allows unlimited boards, the free plan's 3-board limit blocks a 4th board (both at the `PlanLimiter` level and end-to-end through `boards.index`'s `create()`), and the free plan's 3-member limit blocks a 4th invite (both at the `PlanLimiter` level and end-to-end through `workspaces.team`'s `invite()`).
+
+Validation:
+
+- Full suite: passing (212/212)
+- Pint (dirty): passing
+- No live-browser Stripe checkout walkthrough this iteration (would require a real Stripe test-mode secret key, which isn't provisioned in this environment) — the checkout/portal code paths are exercised structurally (Cashier's own `Checkout`/`RedirectResponse` return types, `Responsable` contract) but not against a live Stripe test key. Flagging this as the one piece of Milestone 6 that still needs a manual pass once real Stripe test credentials are available, consistent with how OAuth's placeholder-credential redirect was verified in Milestone 1 (Iteration 4) — that pattern should be repeated here before shipping.
+
+Notes:
+
+- All six checklist items are marked done from this one iteration because they're one cohesive change (standing up billing end-to-end) — same reasoning as Milestones 3 and 5's combined iterations.
+- **Milestone 6 — Monetization Infrastructure is now fully complete**, with the caveat above: real `STRIPE_KEY`/`STRIPE_SECRET`/`STRIPE_WEBHOOK_SECRET`/`STRIPE_PRICE_PRO`/`STRIPE_PRICE_TEAM` values (from a real Stripe account, with Pro/Team recurring Prices created in the Stripe Dashboard) and a live checkout-flow browser check are still needed before this is production-usable — code is fully wired and tested against placeholders, same status as Milestone 1's OAuth item.

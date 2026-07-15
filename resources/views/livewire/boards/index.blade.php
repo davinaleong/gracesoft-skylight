@@ -3,6 +3,7 @@
 use App\Concerns\AuthorizesWorkspaceEditing;
 use App\Models\Board;
 use App\Services\BoardTemplates;
+use App\Services\PlanLimiter;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
@@ -21,9 +22,25 @@ new class extends Component {
         return auth()->user()->boards()->orderBy('position')->get();
     }
 
+    #[Computed]
+    public function atBoardLimit(): bool
+    {
+        $workspace = auth()->user()->currentWorkspace();
+
+        return $workspace && ! PlanLimiter::canCreateBoard($workspace);
+    }
+
     public function create(): void
     {
-        abort_unless(auth()->user()->currentWorkspace()?->canEditContent(auth()->user()), 403);
+        $workspace = auth()->user()->currentWorkspace();
+
+        abort_unless($workspace?->canEditContent(auth()->user()), 403);
+
+        if (! PlanLimiter::canCreateBoard($workspace)) {
+            $this->addError('name', 'You\'ve reached your plan\'s board limit ('.PlanLimiter::boardLimit($workspace).'). Upgrade to create more boards.');
+
+            return;
+        }
 
         $this->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -54,7 +71,7 @@ new class extends Component {
 ?>
 
 <div>
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex items-center justify-between mb-1">
         <h1 class="text-2xl font-semibold">My Boards</h1>
         <button
             wire:click="$set('showCreateForm', true)"
@@ -66,6 +83,18 @@ new class extends Component {
             New board
         </button>
     </div>
+
+    @php $boardLimit = \App\Services\PlanLimiter::boardLimit(auth()->user()->currentWorkspace()); @endphp
+    @if ($boardLimit !== null)
+        <p class="mb-7 text-xs {{ $this->atBoardLimit ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400' }}">
+            {{ $this->boards->count() }} of {{ $boardLimit }} boards used on the {{ auth()->user()->currentWorkspace()->planLimits()['name'] }} plan
+            @if ($this->atBoardLimit)
+                &middot; <a href="{{ route('billing') }}" class="font-medium underline">Upgrade for more</a>
+            @endif
+        </p>
+    @else
+        <div class="mb-7"></div>
+    @endif
 
     <livewire:onboarding.checklist />
 

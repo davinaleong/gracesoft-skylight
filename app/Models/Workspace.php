@@ -11,12 +11,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Laravel\Cashier\Billable;
 
-#[Fillable(['owner_id', 'name'])]
+#[Fillable(['owner_id', 'name', 'plan'])]
 class Workspace extends Model
 {
     /** @use HasFactory<WorkspaceFactory> */
-    use HasFactory;
+    use Billable, HasFactory;
 
     public const ROLE_OWNER = 'owner';
 
@@ -142,5 +143,22 @@ class Workspace extends Model
     public function invites(): HasMany
     {
         return $this->hasMany(WorkspaceInvite::class);
+    }
+
+    /**
+     * Cashier bills by "stripeEmail()" -- a workspace has no email of its
+     * own, so invoices/receipts go to the owner's address.
+     */
+    public function stripeEmail(): ?string
+    {
+        return $this->owner?->email;
+    }
+
+    /**
+     * @return array{name: string, price_monthly: int, board_limit: ?int, member_limit: ?int, stripe_price_id: ?string}
+     */
+    public function planLimits(): array
+    {
+        return config('plans.'.$this->plan) ?? config('plans.free');
     }
 }

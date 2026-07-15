@@ -4,6 +4,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvite;
 use App\Notifications\Workspace\WorkspaceInvitationNotification;
+use App\Services\PlanLimiter;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -61,6 +62,12 @@ new class extends Component {
 
         if ($this->workspace->users()->where('email', $this->email)->exists()) {
             $this->addError('email', 'This person is already a member.');
+
+            return;
+        }
+
+        if (! PlanLimiter::canInviteMember($this->workspace)) {
+            $this->addError('email', 'You\'ve reached your plan\'s member limit ('.PlanLimiter::memberLimit($this->workspace).'). Upgrade to invite more teammates.');
 
             return;
         }
@@ -159,6 +166,16 @@ new class extends Component {
         <div class="rounded-lg bg-green-50 dark:bg-green-900/20 p-3 text-sm text-green-700 dark:text-green-400">
             {{ session('status') }}
         </div>
+    @endif
+
+    @php $memberLimit = \App\Services\PlanLimiter::memberLimit($this->workspace); @endphp
+    @if ($memberLimit !== null)
+        <p class="text-xs {{ ! \App\Services\PlanLimiter::canInviteMember($this->workspace) ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400' }}">
+            {{ $this->members->count() }} of {{ $memberLimit }} members used on the {{ $this->workspace->planLimits()['name'] }} plan
+            @if (! \App\Services\PlanLimiter::canInviteMember($this->workspace))
+                &middot; <a href="{{ route('billing') }}" class="font-medium underline">Upgrade for more</a>
+            @endif
+        </p>
     @endif
 
     <div class="rounded-xl bg-white dark:bg-gray-900 p-6 shadow-sm ring-1 ring-gray-200 dark:ring-gray-800">

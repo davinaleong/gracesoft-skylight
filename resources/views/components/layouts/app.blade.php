@@ -102,6 +102,9 @@
                     <a href="{{ route('team') }}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
                         Team
                     </a>
+                    <a href="{{ route('billing') }}" class="hidden text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors sm:inline">
+                        Billing
+                    </a>
                     <a href="{{ route('profile') }}" class="hidden text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors sm:inline">
                         {{ auth()->user()->name }}
                     </a>

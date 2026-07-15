@@ -45,6 +45,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         return view('workspaces.team', ['workspace' => $workspace]);
     })->name('team.show');
+
+    Route::get('/billing', fn () => view('workspaces.billing'))->name('billing');
 });
 
 Route::get('/invites/{token}', [WorkspaceInviteController::class, 'show'])->name('invites.show');

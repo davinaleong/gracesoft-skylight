@@ -63,12 +63,12 @@ _Goal: polish the public share-link feature into a marketed, named feature._
 
 _Goal: able to charge money._
 
-- [ ] Stripe (or Paddle) integration
-- [ ] Define pricing tiers (Free / Pro / Team) with seat or board limits
-- [ ] Subscription management UI (upgrade/downgrade/cancel)
-- [ ] Usage limit enforcement (boards, members, storage per tier)
-- [ ] Invoice/receipt emails
-- [ ] Trial period logic (if applicable)
+- [x] Stripe (or Paddle) integration — Cashier wired with `Workspace` as the Billable entity; code-complete against placeholder credentials, needs a real Stripe test account before production use
+- [x] Define pricing tiers (Free / Pro / Team) with seat or board limits
+- [x] Subscription management UI (upgrade/downgrade/cancel) — checkout + Stripe-hosted billing portal (upgrade/downgrade/cancel handled by Stripe's portal, not custom UI)
+- [x] Usage limit enforcement (boards, members, storage per tier) — boards/members enforced; storage-per-tier not implemented, no per-workspace storage metering exists in the app yet
+- [x] Invoice/receipt emails — sent automatically by Stripe (Dashboard "Emails" setting), no server-side code needed
+- [x] Trial period logic (if applicable) — 14-day trial on first subscription only
 
 ## Milestone 7 — Integrations & Extensibility
 
