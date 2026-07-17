@@ -47,6 +47,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('team.show');
 
     Route::get('/billing', fn () => view('workspaces.billing'))->name('billing');
+
+    Route::get('/webhooks', fn () => view('workspaces.webhooks'))->name('webhooks');
 });
 
 Route::get('/invites/{token}', [WorkspaceInviteController::class, 'show'])->name('invites.show');

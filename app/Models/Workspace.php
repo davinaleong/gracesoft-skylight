@@ -145,6 +145,11 @@ class Workspace extends Model
         return $this->hasMany(WorkspaceInvite::class);
     }
 
+    public function webhooks(): HasMany
+    {
+        return $this->hasMany(Webhook::class);
+    }
+
     /**
      * Cashier bills by "stripeEmail()" -- a workspace has no email of its
      * own, so invoices/receipts go to the owner's address.

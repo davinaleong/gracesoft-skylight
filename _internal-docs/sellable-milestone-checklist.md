@@ -75,7 +75,7 @@ _Goal: able to charge money._
 _Goal: reduce churn once teams depend on the tool._
 
 - [x] Public REST API (authenticated via API tokens)
-- [ ] Webhooks (card created/moved/completed events)
+- [x] Webhooks (card created/moved/completed events)
 - [ ] Slack integration (post updates to a channel)
 - [ ] Zapier or Make.com integration (or generic webhook docs for DIY)
 - [ ] Data export (CSV/JSON) for boards and cards
