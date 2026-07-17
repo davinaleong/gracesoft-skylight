@@ -787,3 +787,37 @@ Notes:
 
 - All six checklist items are marked done from this one iteration because they're one cohesive change (standing up billing end-to-end) — same reasoning as Milestones 3 and 5's combined iterations.
 - **Milestone 6 — Monetization Infrastructure is now fully complete**, with the caveat above: real `STRIPE_KEY`/`STRIPE_SECRET`/`STRIPE_WEBHOOK_SECRET`/`STRIPE_PRICE_PRO`/`STRIPE_PRICE_TEAM` values (from a real Stripe account, with Pro/Team recurring Prices created in the Stripe Dashboard) and a live checkout-flow browser check are still needed before this is production-usable — code is fully wired and tested against placeholders, same status as Milestone 1's OAuth item.
+
+## 2026-07-17 - Iteration 27 (Milestone 7)
+
+Implemented item:
+
+- Public REST API (authenticated via API tokens)
+
+Changes made:
+
+- Installed `laravel/sanctum`, published its config + `personal_access_tokens` migration, added `HasApiTokens` to `User`. Tokens are scoped to a `User` (not a `Workspace`) since a token acts *as* a person, same as a session login — API requests are then authorized per-workspace exactly like the existing Livewire components, via workspace role checks.
+- New `routes/api.php` (registered in `bootstrap/app.php`'s `withRouting(api: ...)`), versioned under `/api/v1`, entirely behind `auth:sanctum` + a new `api` rate limiter (60 req/min per authenticated user, falling back to per-IP if somehow unauthenticated) registered in `AppServiceProvider`.
+- New `App\Http\Controllers\Api\V1\{BoardController,ColumnController,CardController,CommentController}` — REST CRUD for the core kanban resources (boards, columns, cards, comments). Deliberately scoped to these four; checklists/attachments/labels-as-a-resource/markdown notes are not yet exposed over the API (see Notes) to keep this iteration reviewable.
+- Reused the existing web authorization model instead of inventing a parallel one: extended `App\Concerns\AuthorizesWorkspaceEditing` (already used by every Volt component that mutates board/column/card content) with a new `authorizeView()` method (any workspace member, including viewers, may read) alongside the existing `authorizeEdit()` (owner/admin/member only). Every API controller uses the same trait, so a viewer-role API token behaves identically to a viewer clicking around the UI — verified with a dedicated test forcing 403s on write endpoints while reads succeed.
+- Comment deletion keeps the existing web rule (only the comment's own author may delete it, even if they can edit other content) — enforced with an explicit `abort_unless($comment->user_id === $request->user()->id, 403)` after the workspace-edit check.
+- Board creation via `POST /api/v1/boards` reuses `PlanLimiter::canCreateBoard()` so the API can't be used to bypass a workspace's plan limits; returns `422` with the same message shown in the UI when a workspace is at its board cap.
+- New `App\Http\Resources\{BoardResource,ColumnResource,CardResource,LabelResource,CommentResource}` — boards expose their UUID as `id` (never the internal integer PK, consistent with how board URLs already work); columns/cards expose their integer PK as `id` since neither model has a UUID column and adding one was judged out of scope for this iteration (same internal ID is already visible in every Livewire `wire:click` call in the existing HTML/network tab, so this isn't a new exposure — flagging as a reasonable follow-up if the API is opened to third parties beyond token holders' own workspaces).
+- New API token management UI: `resources/views/livewire/profile/api-tokens.blade.php` (Volt), wired into `/profile` below the two-factor section. Create a named token (plaintext value shown exactly once, matching the "copy it now" UX convention from 2FA recovery codes elsewhere in this app), list existing tokens with last-used time, revoke.
+
+Tests added/updated:
+
+- New `tests/Feature/Api/RestApiTest.php` (17 tests): missing/invalid token rejected with 401, board list/show/create/update/delete, plan-limit enforcement at 422, a stranger to the workspace gets 403 on show, a viewer-role token can read but gets 403 on write, full column and card CRUD, and comment list/create plus the author-only delete rule (with a teammate's attempt correctly 403ing).
+- New `tests/Feature/ApiTokensTest.php` (3 tests): empty state, create-then-reveal-plaintext-once, revoke.
+- **Test-methodology note worth keeping**: Laravel's `RequestGuard` (which `auth:sanctum` uses) caches the resolved user for the lifetime of the guard instance — which, inside one Pest test, spans every simulated HTTP call made with `$this->withToken(...)`. The first comment-authorization test that switched bearer tokens between two different users mid-test silently kept resolving to the *first* user on every later call, letting a teammate's token "delete" a comment it shouldn't have been able to (looked like a real authorization bug at first, wasn't — see `forgetAuthGuards()` in the test file, which calls `app('auth')->forgetGuards()` between actor switches). Flagging this pattern for any future test that authenticates as more than one user via raw tokens within a single test method.
+
+Validation:
+
+- Full suite: passing (229/229)
+- Pint (dirty): passing
+- No live-browser Stripe-style manual walkthrough needed here since there's no external service dependency (unlike OAuth/Stripe) — the full request/response cycle for every endpoint is exercised end-to-end through real HTTP test calls (`$this->withToken(...)->postJson(...)`, etc.), which is a stronger signal for a JSON API than a browser click would be. Did do one manual pass on the new UI surface: logged in through the real `/profile` page, created a token named "Test", confirmed the plaintext value rendered in the amber "copy it now" box and disappeared after clicking "Done", confirmed the token then appeared in the list with "never used", and confirmed a real `curl -H "Authorization: Bearer <token>" /api/v1/boards` request against the running dev server returned the expected JSON. Revoked and cleaned up the test token afterward.
+
+Notes:
+
+- **Scope boundary, flagged not silently skipped**: checklists, checklist items, attachments, markdown notes, and labels-as-their-own-resource (labels are currently only readable nested inside a card's `labels` array, not independently listable/creatable via the API) are not yet exposed as API resources. The four resources implemented (boards/columns/cards/comments) cover the core "read and mutate a board" use case integrations most commonly need (this is also the same set the upcoming webhooks/Slack/Zapier items in this milestone care about); expanding API coverage to the rest of the domain is a natural, low-risk follow-up using the exact same `AuthorizesWorkspaceEditing` + Resource pattern established here.
+- Milestone 7 remaining: webhooks, Slack integration, Zapier/Make.com integration (or docs), data export.

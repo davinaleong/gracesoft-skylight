@@ -113,5 +113,8 @@
 
         {{-- Two-factor authentication --}}
         @include('profile.two-factor-authentication')
+
+        {{-- API tokens --}}
+        @livewire('profile.api-tokens')
     </div>
 </x-layouts.app>

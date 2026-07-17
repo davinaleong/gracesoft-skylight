@@ -15,12 +15,23 @@ trait AuthorizesWorkspaceEditing
 {
     protected function authorizeEdit(Board|Column|Card $model): void
     {
-        $workspace = match (true) {
+        abort_unless($this->workspaceFor($model)->canEditContent(auth()->user()), 403);
+    }
+
+    /**
+     * Read access: any workspace member (including viewers) may view.
+     */
+    protected function authorizeView(Board|Column|Card $model): void
+    {
+        abort_unless($this->workspaceFor($model)->hasMember(auth()->user()), 403);
+    }
+
+    private function workspaceFor(Board|Column|Card $model)
+    {
+        return match (true) {
             $model instanceof Board => $model->workspace,
             $model instanceof Column => $model->board->workspace,
             $model instanceof Card => $model->column->board->workspace,
         };
-
-        abort_unless($workspace->canEditContent(auth()->user()), 403);
     }
 }

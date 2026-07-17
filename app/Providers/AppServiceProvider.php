@@ -41,6 +41,9 @@ class AppServiceProvider extends ServiceProvider
         // Rate-limit for public viewer routes: 30 req/min per IP
         RateLimiter::for('viewer', fn () => Limit::perMinute(30)->by(Request::ip()));
 
+        // Rate-limit for the public REST API: 60 req/min per token (falls back to IP for safety)
+        RateLimiter::for('api', fn ($request) => Limit::perMinute(60)->by($request->user()?->id ?: Request::ip()));
+
         // â”€â”€â”€ Activity logging â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         Event::listen(Login::class, function (Login $event) {
