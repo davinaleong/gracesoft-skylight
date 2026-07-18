@@ -855,3 +855,34 @@ Notes:
 - Same multi-workspace UI gap as Team/Billing (documented above): an admin invited into someone else's workspace can't reach that workspace's `/webhooks` page yet, since there's no `/webhooks/{workspace}` route (unlike `/team/{workspace}`, which got that fix in Milestone 2 Iteration 11). Not fixed here to avoid scope creep on a webhooks-specific iteration — flagging as a good candidate for a dedicated "multi-workspace navigation" pass covering Team, Billing, and Webhooks together.
 - Delivery log retention is unbounded (no pruning job) — acceptable at this app's current scale but worth flagging alongside Milestone 8's "Backups configured and tested" item as a place to add a scheduled cleanup command if delivery volume ever becomes a real storage concern.
 - Milestone 7 remaining: Slack integration, Zapier/Make.com integration (or docs), data export.
+
+## 2026-07-18 - Iteration 29 (Milestone 7)
+
+Implemented item:
+
+- Slack integration (post updates to a channel)
+
+Changes made:
+
+- Added `slack_webhook_url` (Eloquent `encrypted` cast — same reasoning as `Webhook::secret`: an outgoing Slack Incoming Webhook URL is itself a bearer credential) and `slack_events` (json array) directly to `workspaces`, rather than a separate table — a workspace has at most one Slack destination, unlike the generic webhooks feature which supports many URLs per workspace with independent event subscriptions.
+- `Workspace::slackIsConnected()` / `slackNotifiesOn(string $event)` helpers, reusing the exact same `Webhook::EVENTS` constant (card.created/moved/completed/deleted) from the previous iteration so Slack and generic webhooks share one definition of "what a card event is" rather than drifting into two.
+- New `App\Services\SlackNotifier::notifyCardEvent(Workspace, string $event, Card $card, ?Column $fromColumn = null)` — builds a short Slack-flavored message (`:emoji: *title* ... on *board*`) per event type and queues a new `App\Jobs\SendSlackMessage` job (3 tries, same backoff schedule as `SendWebhookRequest`) that POSTs `{"text": "..."}` to the stored webhook URL — the minimal payload shape Slack's Incoming Webhooks expect.
+- Wired into `CardObserver` alongside (not replacing) the Milestone 7 webhook dispatch calls added last iteration: `card.created`, `card.moved` (mentions the source column by name when known), `card.completed` (same last-column-on-the-board rule as generic webhooks), `card.deleted`.
+- **Real bug caught while writing tests, not by them**: `$card->column` is a normal Eloquent relation, which Eloquent caches on the model instance after first access. `CardObserver::created()` already reads `$card->column->board` for the webhook dispatch — if the *same* PHP `Card` instance is later moved (`$card->update(['column_id' => ...])`) within that same request/script, `updated()`'s later read of `$card->column` returned the **stale, pre-move column** (the relation cache doesn't know `column_id` changed), so a Slack move message read "moved from *To Do* to *To Do*" instead of "...to *Doing*". Fixed with `$card->unsetRelation('column')` at the top of `CardObserver::updated()`, forcing a fresh lookup against the current `column_id` before anything (Slack, webhooks, activity logging) reads it. This couldn't have surfaced from a real user action today (the Livewire `moveCard()` method always fetches a fresh `Card` instance per request, never reusing one across a create-then-move sequence), but the fix makes the observer correct regardless of call pattern rather than relying on that assumption silently holding.
+- New `workspaces.integrations` Volt component + `/integrations` page (nav-linked, owner/admin-gated via `canManageMembers()`, same convention as billing/webhooks): a Slack card with the webhook URL field (validated to actually start with `https://hooks.slack.com/`, rejecting arbitrary URLs since this credential lets someone post into a real Slack channel), the same 4 event checkboxes as the webhooks page, "Send test message" (does a real synchronous HTTP call, not a queued job, so success/failure is visible immediately in the UI instead of only in a delivery log), and "Disconnect".
+
+Tests added/updated:
+
+- New `tests/Feature/SlackIntegrationTest.php` (11 tests): a subscribed event posts a message containing the card title, staying silent when Slack isn't connected, staying silent for an unsubscribed event, the moved-card message names both the source and destination columns, `card.completed` fires alongside `card.moved` into the last column, connecting Slack persists the URL + event list, a non-Slack URL is rejected, at least one event is required, a test message reports success, a test message reports the specific failure reason on a non-2xx response, and disconnecting clears both columns.
+- Same test-methodology caveat as the webhooks iteration: didn't write a "forbids a non-manager" HTTP test for `/integrations`, since it's unreachable for the same documented reason (`currentWorkspace()` always resolves to a workspace the acting user owns) — asserted `Workspace::canManageMembers()` directly instead where relevant.
+
+Validation:
+
+- Full suite: passing (252/252, up from 241)
+- Pint (dirty): passing
+- Manual browser check: logged in as a real user, opened `/integrations`, confirmed all four nav links (Team/Billing/Webhooks/Integrations) render, entered a fake `https://hooks.slack.com/...` URL with all four events checked, clicked "Connect Slack," confirmed the page re-rendered with a "Connected" badge and Save/Send test message/Disconnect controls. Clicked "Send test message" against the fake (non-existent) URL and confirmed the UI surfaced the exact graceful failure message ("Slack responded with an error (HTTP 404). Double-check the webhook URL.") rather than a crash or silent no-op — this is the real HTTP round-trip through `sendTestMessage()`, not a mock. Cleaned up the test user afterward.
+
+Notes:
+
+- Nav bar now carries four workspace-settings links (Team, Billing, Webhooks, Integrations) plus notifications/dark-mode/profile/sign-out. Still fits without reintroducing the mobile overflow bug fixed in Milestone 4 (each new one followed the same `hidden ... sm:inline` convention), but it's visibly getting crowded on desktop too — flagging as a good candidate for consolidating Webhooks + Integrations under one "Developer settings" page/nav item in a future UX pass, rather than growing the top nav by one link per integration indefinitely.
+- Milestone 7 remaining: Zapier/Make.com integration (or generic webhook docs), data export.

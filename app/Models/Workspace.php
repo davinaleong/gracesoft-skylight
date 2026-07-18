@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Cashier\Billable;
 
-#[Fillable(['owner_id', 'name', 'plan'])]
+#[Fillable(['owner_id', 'name', 'plan', 'slack_webhook_url', 'slack_events'])]
 class Workspace extends Model
 {
     /** @use HasFactory<WorkspaceFactory> */
@@ -148,6 +148,24 @@ class Workspace extends Model
     public function webhooks(): HasMany
     {
         return $this->hasMany(Webhook::class);
+    }
+
+    public function slackIsConnected(): bool
+    {
+        return filled($this->slack_webhook_url);
+    }
+
+    public function slackNotifiesOn(string $event): bool
+    {
+        return $this->slackIsConnected() && in_array($event, $this->slack_events ?? [], true);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'slack_webhook_url' => 'encrypted',
+            'slack_events' => 'array',
+        ];
     }
 
     /**

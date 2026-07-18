@@ -3,7 +3,9 @@
 namespace App\Observers;
 
 use App\Models\Card;
+use App\Models\Column;
 use App\Services\ActivityLogger;
+use App\Services\SlackNotifier;
 use App\Services\WebhookDispatcher;
 
 class CardObserver
@@ -12,7 +14,9 @@ class CardObserver
     {
         ActivityLogger::log('card.created', $card, ['card_title' => $card->title, 'board_id' => $card->column->board_id]);
 
-        WebhookDispatcher::dispatch($card->column->board->workspace, 'card.created', $this->payload($card));
+        $workspace = $card->column->board->workspace;
+        WebhookDispatcher::dispatch($workspace, 'card.created', $this->payload($card));
+        SlackNotifier::notifyCardEvent($workspace, 'card.created', $card);
     }
 
     public function updated(Card $card): void
@@ -21,6 +25,14 @@ class CardObserver
         $ignore = ['position', 'column_id', 'updated_at'];
         $moved = isset($dirty['column_id']);
         $relevant = array_diff_key($dirty, array_flip($ignore));
+
+        // If this model instance already had its `column` relation cached from
+        // an earlier access in this same request/script (e.g. this Card was
+        // just created moments ago in the same call), that cache would still
+        // reflect the *old* column_id -- update() changes the attribute but
+        // doesn't invalidate cached relations. Force a fresh lookup so a move
+        // is never reported against the column the card started in.
+        $card->unsetRelation('column');
         $board = $card->column->board;
         $boardId = $board->id;
 
@@ -34,6 +46,9 @@ class CardObserver
 
             WebhookDispatcher::dispatch($board->workspace, 'card.moved', $this->payload($card));
 
+            $fromColumn = Column::find($card->getOriginal('column_id'));
+            SlackNotifier::notifyCardEvent($board->workspace, 'card.moved', $card, $fromColumn);
+
             // "Completed" isn't a native concept in this app -- treat the board's
             // right-most (highest position) column as the finish line, so this
             // works for any workflow (Done, Published, Complete, ...) without
@@ -42,6 +57,7 @@ class CardObserver
 
             if ($lastColumnId !== null && (int) $dirty['column_id'] === $lastColumnId) {
                 WebhookDispatcher::dispatch($board->workspace, 'card.completed', $this->payload($card));
+                SlackNotifier::notifyCardEvent($board->workspace, 'card.completed', $card);
             }
         }
 
@@ -58,7 +74,9 @@ class CardObserver
     {
         ActivityLogger::log('card.deleted', $card, ['card_title' => $card->title, 'board_id' => $card->column->board_id]);
 
-        WebhookDispatcher::dispatch($card->column->board->workspace, 'card.deleted', $this->payload($card));
+        $workspace = $card->column->board->workspace;
+        WebhookDispatcher::dispatch($workspace, 'card.deleted', $this->payload($card));
+        SlackNotifier::notifyCardEvent($workspace, 'card.deleted', $card);
     }
 
     /**

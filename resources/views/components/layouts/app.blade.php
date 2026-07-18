@@ -108,6 +108,9 @@
                     <a href="{{ route('webhooks') }}" class="hidden text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors sm:inline">
                         Webhooks
                     </a>
+                    <a href="{{ route('integrations') }}" class="hidden text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors sm:inline">
+                        Integrations
+                    </a>
                     <a href="{{ route('profile') }}" class="hidden text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors sm:inline">
                         {{ auth()->user()->name }}
                     </a>
