@@ -8,12 +8,24 @@ use App\Models\BoardShareLink;
 use App\Models\ShareLinkAccess;
 use App\Models\Workspace;
 use App\Services\ActivityLogger;
+use App\Services\SystemStatusService;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return auth()->check() ? redirect()->route('home') : redirect()->route('login');
 });
+
+// Public status page -- rate-limited since each load does real read/write
+// checks against the cache and storage disks, not just a static page render.
+Route::middleware(['throttle:status'])->get('/status', function (SystemStatusService $status) {
+    $checks = $status->checks();
+
+    return view('status', [
+        'checks' => $checks,
+        'healthy' => collect($checks)->every(fn ($check) => $check['healthy']),
+    ]);
+})->name('status');
 
 Route::middleware(['web', 'guest'])->prefix('auth')->group(function () {
     Route::get('/{provider}/redirect', [SocialiteController::class, 'redirect'])

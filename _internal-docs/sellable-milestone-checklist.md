@@ -86,7 +86,7 @@ _Goal: credible enough for a stranger to trust with their data._
 
 - [x] Move file attachments to S3-compatible storage (not local disk)
 - [x] Backups configured and tested (restore drill, not just backup job)
-- [ ] Uptime monitoring + status page
+- [x] Uptime monitoring + status page
 - [ ] Security page (mention 2FA, encryption at rest/in transit)
 - [ ] Privacy policy + Terms of Service
 - [ ] Production deployment hardened (queue workers, scheduler, error tracking e.g. Sentry)

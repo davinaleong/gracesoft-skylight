@@ -999,3 +999,31 @@ Notes:
 
 - Production still needs real `AWS_BACKUP_BUCKET` (ideally a separate bucket/account from `AWS_BUCKET`) and `BACKUP_NOTIFICATION_EMAIL` values before the off-site copy and failure alerts actually do anything — same "code-complete, needs real infra" status as Stripe/OAuth/S3 attachments. `BACKUP_ARCHIVE_PASSWORD` is optional (archives are unencrypted by default) but recommended given `.env` itself is inside the archive.
 - This iteration is a strong example of why "runs without an exception" isn't the same as "works": `backup:run` returning a happy exit code after the zip/password fixes would have looked identical whether or not the restore path actually functioned — the scratch-database import is what actually proves it.
+
+## 2026-07-18 - Iteration 34 (Milestone 8)
+
+Implemented item:
+
+- Uptime monitoring + status page
+
+Changes made:
+
+- **Split into what the app itself can honestly provide vs. what genuinely requires an external service**: an app cannot monitor its own uptime — if it's down, it can't report that it's down. Laravel already ships a built-in `/up` health-check route (`bootstrap/app.php`'s `health: '/up'`), which is the correct target for a real external uptime monitor (UptimeRobot, Better Uptime, Pingdom, etc.) to poll. This iteration's job was building the human-facing half: a richer public status page, plus pointing whoever deploys this at the right external tool rather than pretending to build uptime monitoring from inside the monitored process itself.
+- New `App\Services\SystemStatusService`: four independent checks — `Database` (`DB::connection()->getPdo()`), `Cache` (real put/pull round-trip with a random key), `File storage` (real put/get/delete round-trip against `config('filesystems.default')`, so this reflects whichever disk — local or S3 — is actually configured, not just its own private/loopback path), and `Background jobs` (any `failed_jobs` rows in the last 24h — a proxy for "is the queue actually processing," since a healthy connection but a backlog of silent failures is its own kind of down). Every check is wrapped in try/catch so one failing dependency can't take down the status page's ability to report on the others.
+- New public `GET /status` route + view, using a new `x-layouts.public` Blade component (minimal nav — logo + sign-in link — distinct from the authenticated app shell) that Milestone 9's marketing pages will also reuse rather than each hand-rolling their own `<html>` skeleton the way `viewer/board.blade.php` currently does.
+- Rate-limited (`throttle:status`, 30/min per IP, same convention as the existing `viewer` limiter) since — unlike a static page — every load does real read/write checks against the cache and storage disks, which is real work worth protecting from casual abuse while still comfortably covering how often a real monitor polls.
+
+Tests added/updated:
+
+- New `tests/Feature/StatusPageTest.php` (6 tests): all four checks report healthy under normal test conditions, the background-jobs check correctly flips unhealthy when a row is inserted into `failed_jobs`, the file-storage check correctly flips unhealthy when `filesystems.default` points at a disk that doesn't exist, the status page shows "All systems operational" when healthy, shows the degraded message when a check fails, and is reachable without authentication (a status page a customer can't check while logged out defeats the purpose).
+
+Validation:
+
+- Full suite: passing (276/276, up from 270)
+- Pint (dirty): passing
+- Manual browser check: loaded `/status` in a real browser as a guest (no login), confirmed "All systems operational" with all four checks showing green detail text, confirmed the nav shows "Sign in" (proving no auth is required), and confirmed `/up` still returns a real 200 response via `fetch()` — that's the actual URL to hand to an external uptime monitor.
+
+Notes:
+
+- Production deployment still needs an actual external monitor configured against `/up` — this codebase can build the status page but cannot, by definition, monitor its own uptime from inside itself. Documented directly on the status page itself (not just in this log) so whoever operates this doesn't mistake the status page for the monitor.
+- `x-layouts.public` is deliberately minimal for this iteration (just enough for a status page) — Milestone 9's landing/pricing/changelog pages will likely want a fuller public nav (nav links to those pages, a footer), which is a natural place to extend this component rather than duplicating another full-page layout.
