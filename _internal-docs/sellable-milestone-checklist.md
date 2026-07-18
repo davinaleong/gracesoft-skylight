@@ -78,7 +78,7 @@ _Goal: reduce churn once teams depend on the tool._
 - [x] Webhooks (card created/moved/completed events)
 - [x] Slack integration (post updates to a channel)
 - [x] Zapier or Make.com integration (or generic webhook docs for DIY)
-- [ ] Data export (CSV/JSON) for boards and cards
+- [x] Data export (CSV/JSON) for boards and cards
 
 ## Milestone 8 — Trust & Ops
 

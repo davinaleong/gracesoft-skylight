@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\SocialiteController;
+use App\Http\Controllers\BoardExportController;
 use App\Http\Controllers\WorkspaceInviteController;
 use App\Models\Board;
 use App\Models\BoardShareLink;
@@ -36,6 +37,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         return view('boards.show', ['board' => $board]);
     })->name('boards.show');
+
+    Route::get('/boards/{board}/export', BoardExportController::class)->name('boards.export');
 
     Route::get('/team', fn () => view('workspaces.team', ['workspace' => auth()->user()->currentWorkspace()]))
         ->name('team');

@@ -342,6 +342,21 @@ new class extends Component
                     <span class="h-1.5 w-1.5 rounded-full bg-indigo-500"></span>
                 @endif
             </button>
+            <div x-data="{ open: false }" @click.outside="open = false" class="relative">
+                <button
+                    @click="open = !open"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3.5 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    Export
+                </button>
+                <div x-show="open" x-cloak class="absolute right-0 z-10 mt-1.5 w-40 rounded-lg bg-white dark:bg-gray-900 py-1 shadow-lg ring-1 ring-gray-200 dark:ring-gray-800">
+                    <a href="{{ route('boards.export', ['board' => $board, 'format' => 'json']) }}" class="block px-3.5 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Export as JSON</a>
+                    <a href="{{ route('boards.export', ['board' => $board, 'format' => 'csv']) }}" class="block px-3.5 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Export as CSV</a>
+                </div>
+            </div>
             <button
                 wire:click="$set('showColumnForm', true)"
                 class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3.5 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"

@@ -914,3 +914,30 @@ Validation:
 Notes:
 
 - Milestone 7 remaining: data export (CSV/JSON) for boards and cards.
+
+## 2026-07-18 - Iteration 31 (Milestone 7)
+
+Implemented item:
+
+- Data export (CSV/JSON) for boards and cards
+
+Changes made:
+
+- New `App\Services\BoardExporter`: `toArray()`/`toJson()` produce the full nested structure (board → columns → cards → labels/checklists/items/comments) for a complete, lossless export; `toCsvRows()` flattens to one row per card (`column, title, description, color, starts_at, ends_at, labels, checklist_progress, comments_count`) for spreadsheet use, where JSON's nesting doesn't translate — labels are semicolon-joined, checklist progress is a single `"done/total"` string rather than a nested list.
+- New `App\Http\Controllers\BoardExportController` (plain controller, not a Volt component — a file download is a stateless GET, so it doesn't need Livewire's request/response cycle) at `GET /boards/{board}/export?format=json|csv`, gated by the same `Workspace::hasMember()` read-access check as the board page itself (any role, including viewers, can export — matches the existing "viewers can read everything" rule from Milestone 2). An unrecognized `format` value falls back to JSON rather than erroring, since this is a plain query-string link a user might hand-edit or bookmark, not a form submission worth validating strictly.
+- CSV is streamed via `fputcsv`/`streamDownload` rather than built as one big string in memory, so export size scales with board size without a memory spike; JSON is returned as a normal attachment response (boards are small enough that pre-rendering the whole payload is fine, and it keeps the controller simpler than a second streaming code path).
+- UI: a new "Export" button in the board header (small Alpine-only dropdown revealing "Export as JSON" / "Export as CSV" links, no Livewire round-trip needed since these are just downloadable GET links) — same "client-side first" convention as the keyboard-shortcuts overlay from Milestone 4.
+
+Tests added/updated:
+
+- New `tests/Feature/BoardExportTest.php` (6 tests): unauthenticated requests redirect to login, a non-member of the workspace gets 403, JSON export returns the full nested structure with correct `Content-Type`/`Content-Disposition` headers, CSV export returns one data row per card with the expected header line and checklist-progress fraction, a viewer-role member can export (read-only access, not blocked like an edit action would be), and an unrecognized format value falls back to JSON instead of erroring.
+
+Validation:
+
+- Full suite: passing (259/259, up from 253)
+- Pint (dirty): passing
+- Manual browser check: logged in as a real user with a seeded board, clicked "Export" on the board page and confirmed the dropdown revealed both links with the correct board UUID in the URL; since a `Content-Disposition: attachment` response can't be navigated to directly in this environment's browser pane, fetched both endpoints via the page's own `fetch()` and confirmed real 200 responses — JSON with `Content-Type: application/json`, `Content-Disposition: attachment; filename="qa-export-board.json"`, and the expected nested board/columns/cards structure in the body; CSV with `Content-Type: text/csv`, the correct header row, and a data row matching the seeded card. Cleaned up the test user (and its board, via cascade) afterward.
+
+Notes:
+
+- **Milestone 7 — Integrations & Extensibility is now fully complete.** All 5 items checked off: public REST API, outgoing webhooks, Slack integration, Zapier/Make.com docs, and this data export feature.
