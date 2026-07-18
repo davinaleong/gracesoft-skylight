@@ -886,3 +886,31 @@ Notes:
 
 - Nav bar now carries four workspace-settings links (Team, Billing, Webhooks, Integrations) plus notifications/dark-mode/profile/sign-out. Still fits without reintroducing the mobile overflow bug fixed in Milestone 4 (each new one followed the same `hidden ... sm:inline` convention), but it's visibly getting crowded on desktop too — flagging as a good candidate for consolidating Webhooks + Integrations under one "Developer settings" page/nav item in a future UX pass, rather than growing the top nav by one link per integration indefinitely.
 - Milestone 7 remaining: Zapier/Make.com integration (or generic webhook docs), data export.
+
+## 2026-07-18 - Iteration 30 (Milestone 7)
+
+Implemented item:
+
+- Zapier or Make.com integration (or generic webhook docs for DIY)
+
+Changes made:
+
+- No new backend code — this app already ships the two building blocks Zapier and Make.com need (generic outgoing webhooks from Milestone 7 Iteration 28, and the token-authenticated REST API from Iteration 27). Publishing an actual certified Zapier/Make app is a separate external-platform undertaking (their own review process, hosted trigger/action definitions, ongoing maintenance) that's out of scope for this codebase — the checklist item explicitly allows "generic webhook docs for DIY" as the alternative, so this iteration is documentation wired into the product rather than new integration code, same reasoning as Milestone 6's Stripe-invoice-emails and Milestone 5's "who accessed" items (don't build a parallel system for something already solved).
+- Added a "Zapier & Make.com" card to the `workspaces.integrations` Volt component (below the Slack card built last iteration), covering both integration directions:
+    - **Reacting to events**: point a Zapier "Catch Hook" trigger or Make "Custom Webhook" module at a URL created on the existing Webhooks page (linked inline), with a real example `card.moved` JSON payload and an explanation of the `X-Skylight-Signature` HMAC header so a Zap/Scenario can verify authenticity before acting.
+    - **Reading/writing data**: create a token on the profile page (linked inline), then call `/api/v1/...` endpoints from Zapier's generic "Webhooks by Zapier" action or Make's "HTTP" module with a `Authorization: Bearer <token>` header — with a concrete example (`POST /api/v1/columns/<column_id>/cards`) for the most common trigger-a-Zap-to-create-a-card use case.
+- All content is static/generic (no per-workspace state beyond the two outbound links), so no new migration, model, or job was needed.
+
+Tests added/updated:
+
+- New `tests/Feature/ZapierIntegrationDocsTest.php` (1 test): asserts the docs section renders on `/integrations` with the expected section heading, the "Catch Hook" and signature-header explanations, and working links to the real `webhooks` and `profile` routes plus the real `/api/v1` base URL (not placeholder text) — so this would fail if either linked route were ever renamed.
+
+Validation:
+
+- Full suite: passing (253/253, up from 252)
+- Pint (dirty): passing
+- Manual browser check: logged in, opened `/integrations`, confirmed the new "Zapier & Make.com" card renders below Slack with both numbered walkthroughs, the example JSON payload, and the signature explanation; confirmed the inline "Webhooks" link actually resolves to `/webhooks` (not a dead placeholder) via the page's accessibility tree. Cleaned up the test user afterward.
+
+Notes:
+
+- Milestone 7 remaining: data export (CSV/JSON) for boards and cards.

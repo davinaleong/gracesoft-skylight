@@ -158,4 +158,43 @@ new class extends Component {
             </p>
         @endif
     </div>
+
+    <div class="rounded-xl bg-white dark:bg-gray-900 p-6 shadow-sm ring-1 ring-gray-200 dark:ring-gray-800">
+        <h3 class="text-base font-semibold mb-1">Zapier &amp; Make.com</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            There's no published Zapier or Make app yet, but both connect to {{ config('app.name', 'Skylight') }} today using the building blocks already on this page — no code required.
+        </p>
+
+        <div class="space-y-5 text-sm">
+            <div>
+                <h4 class="font-medium mb-1">React to card events (Zapier "Catch Hook" / Make "Custom Webhook")</h4>
+                <ol class="list-decimal list-inside space-y-1 text-gray-600 dark:text-gray-400">
+                    <li>Create a webhook trigger step in Zapier or Make and copy the URL it gives you.</li>
+                    <li>Paste that URL into <a href="{{ route('webhooks') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">Webhooks</a> here, choose which events to send, and save.</li>
+                    <li>Every matching card event now posts a JSON payload straight to your Zap or Scenario.</li>
+                </ol>
+                <p class="mt-2 text-gray-500 dark:text-gray-400">Example payload for a <span class="font-mono text-xs bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5">card.moved</span> event:</p>
+                <pre class="mt-1.5 rounded-lg bg-gray-50 dark:bg-gray-950 p-3 text-xs overflow-x-auto ring-1 ring-gray-200 dark:ring-gray-800">{{ json_encode([
+                    'event' => 'card.moved',
+                    'data' => ['card_id' => 42, 'title' => 'Ship the API', 'column_id' => 7, 'board_id' => '9f2c...'],
+                    'sent_at' => '2026-07-18T10:00:00+00:00',
+                ], JSON_PRETTY_PRINT) }}</pre>
+                <p class="mt-2 text-gray-500 dark:text-gray-400">
+                    Each request carries an <span class="font-mono text-xs bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5">X-Skylight-Signature</span> header (<span class="font-mono text-xs bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5">sha256=&lt;hmac&gt;</span>) so you can verify it really came from {{ config('app.name', 'Skylight') }} — compute an HMAC-SHA256 of the raw request body using the signing secret shown when you created the webhook, and compare it to the header.
+                </p>
+            </div>
+
+            <div>
+                <h4 class="font-medium mb-1">Read or write boards, columns, and cards (Zapier/Make "Webhooks"/"HTTP" action)</h4>
+                <ol class="list-decimal list-inside space-y-1 text-gray-600 dark:text-gray-400">
+                    <li>Create a token on your <a href="{{ route('profile') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">profile page</a> under "API tokens."</li>
+                    <li>In Zapier's generic "Webhooks by Zapier" action (or Make's "HTTP" module), call <span class="font-mono text-xs bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5">{{ url('/api/v1') }}/...</span> endpoints.</li>
+                    <li>Add an <span class="font-mono text-xs bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5">Authorization: Bearer &lt;token&gt;</span> header to authenticate.</li>
+                </ol>
+                <p class="mt-2 text-gray-500 dark:text-gray-400">
+                    For example, a Zap step that creates a card when a new row appears in a spreadsheet: <span class="font-mono text-xs bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5">POST {{ url('/api/v1/columns') }}/&lt;column_id&gt;/cards</span> with a JSON body of <span class="font-mono text-xs bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5">{"title": "..."}</span>.
+                </p>
+            </div>
+        </div>
+    </div>
 </div>

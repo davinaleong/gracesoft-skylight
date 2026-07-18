@@ -77,7 +77,7 @@ _Goal: reduce churn once teams depend on the tool._
 - [x] Public REST API (authenticated via API tokens)
 - [x] Webhooks (card created/moved/completed events)
 - [x] Slack integration (post updates to a channel)
-- [ ] Zapier or Make.com integration (or generic webhook docs for DIY)
+- [x] Zapier or Make.com integration (or generic webhook docs for DIY)
 - [ ] Data export (CSV/JSON) for boards and cards
 
 ## Milestone 8 — Trust & Ops
