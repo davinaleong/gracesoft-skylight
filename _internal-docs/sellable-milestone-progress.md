@@ -1027,3 +1027,29 @@ Notes:
 
 - Production deployment still needs an actual external monitor configured against `/up` — this codebase can build the status page but cannot, by definition, monitor its own uptime from inside itself. Documented directly on the status page itself (not just in this log) so whoever operates this doesn't mistake the status page for the monitor.
 - `x-layouts.public` is deliberately minimal for this iteration (just enough for a status page) — Milestone 9's landing/pricing/changelog pages will likely want a fuller public nav (nav links to those pages, a footer), which is a natural place to extend this component rather than duplicating another full-page layout.
+
+## 2026-07-18 - Iteration 35 (Milestone 8)
+
+Implemented item:
+
+- Security page (mention 2FA, encryption at rest/in transit)
+
+Changes made:
+
+- New public `GET /security` page (reusing `x-layouts.public` from the status-page iteration) auditing this app's actual code for real, already-shipped security practices to describe — deliberately not aspirational copy. Confirmed each claim against the source before writing it: TOTP 2FA with recovery codes (`config/fortify.php`'s `twoFactorAuthentication` feature, Milestone 1), bcrypt password hashing (Laravel default `'hashed'` cast), `Webhook::secret`/`Workspace::slack_webhook_url` using Eloquent's `encrypted` cast (AES-256, reversible because the app needs the plaintext back to sign requests) vs. API tokens/share links/workspace invites which are SHA-256 **hashed** and never stored reversibly (`grep`'d `BoardShareLink`, `WorkspaceInvite`, and Sanctum's own token storage to confirm), `ActivityLogger::hashIp()` (visitor IPs hashed, not raw), the workspace role/permission model from Milestone 2, S3-compatible storage from this milestone's first iteration, and the nightly-backup-with-tested-restore from two iterations ago.
+- Deliberately honest about one gap rather than glossing over it: HTTPS/TLS-in-transit is described as "set up as part of standard deployment," not claimed as something the app enforces in code — this codebase has no `TrustProxies`/forced-HTTPS middleware configured yet (that's the next checklist item, "Production deployment hardened"), so claiming it here would have been the kind of unverified claim this page is explicitly trying to avoid.
+
+Tests added/updated:
+
+- New `tests/Feature/SecurityPageTest.php` (1 test): the page is reachable without authentication and mentions two-factor authentication, bcrypt, SHA-256, AES-256, role-based permissions, and nightly backups.
+- **Real bug caught by the manual browser check, not by the first pass of automated tests**: the page's "report a security issue" line originally built the contact address inline as `security@{{ parse_url(...) }}`. Blade parses `@{{` as its literal-braces escape sequence (used to let templates output an untouched `{{ }}` for frontend frameworks) rather than as `@` followed by an expression — so the entire mailto address rendered as raw, un-evaluated template syntax in both the link text and its `href`, silently, with no error. Fixed by precomputing the address in a `@php` block and interpolating the resulting variable instead of concatenating `@` directly against `{{ }}`. Added a regression assertion (`assertDontSee('{{', false)` plus a check for a real `mailto:security@` link) so this exact class of bug can't silently reappear — the first test pass had already asserted the surrounding words appeared, which is exactly the kind of assertion that stays green while the actual bug ships, underscoring why the manual browser pass (which reads real rendered output, not just presence of nearby text) still matters even with test coverage in place.
+
+Validation:
+
+- Full suite: passing (277/277, up from 276 after the fix — 1 new test)
+- Pint (dirty): passing
+- Manual browser check: this is what caught the bug above. Loaded `/security` as a guest (no login), read the full rendered page text, and found the literal `security{{ parse_url(config('app.url'), PHP_URL_HOST) ?? 'example.com' }}` string in the output instead of a real email address. Fixed the template, reloaded, and confirmed the page now renders a real address (`security@gracesoft-skylight.test` against this environment's `APP_URL`) with a working `mailto:` link.
+
+Notes:
+
+- This page's "in transit" claim is intentionally the honest, lesser claim ("set up as part of standard deployment") rather than a stronger one the code doesn't yet back up — actually enforcing/verifying HTTPS (trusted proxies, forced scheme, secure session cookies) belongs to the next Milestone 8 item, "Production deployment hardened," and this page's copy should be revisited once that lands to say something stronger if warranted.
