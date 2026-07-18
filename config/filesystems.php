@@ -60,6 +60,22 @@ return [
             'report' => false,
         ],
 
+        // Dedicated destination for backups (config/backup.php) -- deliberately
+        // a separate disk from `s3` above so a compromised/lost primary bucket
+        // doesn't also take the backups with it. Point AWS_BACKUP_BUCKET at a
+        // different bucket (ideally a different cloud account) than AWS_BUCKET.
+        'backups' => [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('AWS_BACKUP_BUCKET', env('AWS_BUCKET')),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*
