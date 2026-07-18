@@ -941,3 +941,30 @@ Validation:
 Notes:
 
 - **Milestone 7 — Integrations & Extensibility is now fully complete.** All 5 items checked off: public REST API, outgoing webhooks, Slack integration, Zapier/Make.com docs, and this data export feature.
+
+## 2026-07-19 - Iteration 32 (Milestone 8)
+
+Implemented item:
+
+- Move file attachments to S3-compatible storage (not local disk)
+
+Changes made:
+
+- **No application code changed** — every upload/delete/URL-generation call site (`profile.avatar`'s `upload()`/`remove()`, `User::avatarUrl()`, `cards.detail`'s `uploadImage()`/`deleteAttachment()`, `Attachment::temporaryUrl()`) already resolves the disk via `config('filesystems.default')` rather than hardcoding `local`. This was a deliberate architectural choice made back in the original (non-sellable) Milestone 6 "Attachment Manager" work and confirmed disk-agnostic again in Milestone 1's avatar iteration — this checklist item turned out to be "prove it actually works," not "rebuild it."
+- The one real gap: `league/flysystem-aws-s3-v3` — the package Laravel's `s3` filesystem driver actually needs at runtime — was never installed (only referenced in `composer.lock` as a suggestion of the base `league/flysystem` package, with no corresponding vendor directory). Installed it via `composer require league/flysystem-aws-s3-v3`. `config/filesystems.php`'s `s3` disk definition already existed from the Laravel skeleton and needed no changes.
+- Added the two S3-compatible-provider env vars that were referenced in `config/filesystems.php` (`'url' => env('AWS_URL')`, `'endpoint' => env('AWS_ENDPOINT')`) but missing from `.env`/`.env.example`: `AWS_URL` (for serving files through a CDN/custom domain in front of the bucket) and `AWS_ENDPOINT` (for pointing at a non-AWS S3-compatible provider — DigitalOcean Spaces, Cloudflare R2, Backblaze B2, MinIO — combined with the already-present `AWS_USE_PATH_STYLE_ENDPOINT`).
+- Did not flip this repo's own `FILESYSTEM_DISK` from `local` to `s3` — doing so would require a real bucket and credentials this environment doesn't have (same status as Stripe/OAuth: code-complete against placeholders, needs real infrastructure before production). Production deployment is a one-line env change (`FILESYSTEM_DISK=s3` plus the `AWS_*` values) with zero code deployment risk, which is the point of having built it disk-agnostic from the start.
+
+Tests added/updated:
+
+- New `tests/Feature/S3StorageTest.php` (5 tests) — deliberately mirrors the existing local-disk tests (`ProfileAvatarTest`, `AttachmentsTest`) but forces `config(['filesystems.default' => 's3'])` + `Storage::fake('s3')` for the duration of each test: avatar upload lands on the `s3` disk (and explicitly *not* on `local`), replacing an avatar deletes the old file from `s3`, `User::avatarUrl()` generates a URL against `s3`, a card image attachment uploads to and generates a temporary URL from `s3`, and deleting an attachment removes it from `s3`. This is a genuine end-to-end proof the disk-agnostic design works, not an inference from reading the code.
+
+Validation:
+
+- Full suite: passing (264/264, up from 259)
+- Pint (dirty): passing
+- No live-browser check for this iteration — there is no visible UI difference (the whole point of the disk-agnostic design is that the UI behaves identically regardless of which disk is configured), and there's no real S3 bucket/credentials in this environment to exercise a live upload against. The new fake-disk tests are the appropriate verification here, the same reasoning already used for Milestone 6's Stripe checkout code (structurally exercised, not live-clicked, absent real credentials).
+
+Notes:
+
+- Production cutover checklist for whoever deploys this: create an S3 (or S3-compatible) bucket, set `FILESYSTEM_DISK=s3` plus `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_DEFAULT_REGION`/`AWS_BUCKET` (and `AWS_ENDPOINT`/`AWS_USE_PATH_STYLE_ENDPOINT` if not using real AWS), then run `php artisan tinker` to spot-check an upload before relying on it. Existing local-disk attachments would need a one-time file copy to the bucket if migrating an already-running instance — not needed here since this is a pre-launch codebase with no production files yet, so no migration/backfill command was built for a scenario that doesn't exist yet.

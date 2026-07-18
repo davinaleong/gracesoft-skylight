@@ -84,7 +84,7 @@ _Goal: reduce churn once teams depend on the tool._
 
 _Goal: credible enough for a stranger to trust with their data._
 
-- [ ] Move file attachments to S3-compatible storage (not local disk)
+- [x] Move file attachments to S3-compatible storage (not local disk)
 - [ ] Backups configured and tested (restore drill, not just backup job)
 - [ ] Uptime monitoring + status page
 - [ ] Security page (mention 2FA, encryption at rest/in transit)
