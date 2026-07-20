@@ -1053,3 +1053,32 @@ Validation:
 Notes:
 
 - This page's "in transit" claim is intentionally the honest, lesser claim ("set up as part of standard deployment") rather than a stronger one the code doesn't yet back up — actually enforcing/verifying HTTPS (trusted proxies, forced scheme, secure session cookies) belongs to the next Milestone 8 item, "Production deployment hardened," and this page's copy should be revisited once that lands to say something stronger if warranted.
+
+## 2026-07-19 - Iteration 36 (Milestone 8)
+
+Implemented item:
+
+- Privacy policy + Terms of Service pages
+
+Changes made:
+
+- New public `GET /privacy` and `GET /terms` pages (same `x-layouts.public` shell as the status/security pages). Both open with an explicit amber-boxed disclaimer that this is a template, not legal advice, and should be reviewed by a lawyer before real use — the same "don't overclaim" discipline as the security page, applied to legal copy instead of technical copy.
+- Privacy policy content is grounded in what this codebase actually does (re-verified against the security page's iteration, not just copied from a generic template): account info + OAuth provider data, uploaded content, the activity log, hashed (not raw) IPs, Stripe for billing. Names the real third-party processors (Stripe, S3-compatible storage, an email delivery provider, and Slack — but only if a workspace owner chooses to connect it). Points at the real self-serve data-export feature (Milestone 7) for "your choices," and is honest that **self-serve account deletion doesn't exist yet** — direct to email support instead of claiming a button that isn't there.
+- Terms of Service covers account responsibility, content ownership (users own their content, we claim none of it), Client Portal sharing responsibility, Stripe-handled billing/cancellation, acceptable use, and links to the real `/status` page for the availability section rather than promising an uptime SLA this app doesn't have infrastructure to back.
+- Extended `x-layouts.public` (built in the status-page iteration, anticipating exactly this) with a shared footer linking Status/Security/Privacy/Terms — so these four pages cross-link each other instead of each being a dead end, without adding anything to the already-crowded authenticated app nav.
+- Linked Terms and Privacy from the registration page (`resources/views/auth/register.blade.php`) — a small "By creating an account, you agree to..." line below the submit button, the standard place this convention lives.
+
+Tests added/updated:
+
+- New `tests/Feature/PrivacyTermsPagesTest.php` (4 tests): both pages are reachable without authentication and mention real product specifics (Stripe, hashed IPs, data export, Slack, Client Portal); the shared public footer links all four pages from all four pages; the registration page links both. Both page tests include the same `assertDontSee('{{', false)` regression guard added for the security page's mailto bug, applied here too since both pages use the identical `@php`-computed-address pattern — cheap insurance against the exact same class of bug recurring.
+- No new bugs found in this iteration (unlike the security page) — likely because the `@php`-block-then-interpolate pattern for building the contact address was already fixed once and just reused, rather than re-typed inline.
+
+Validation:
+
+- Full suite: passing (281/281, up from 277)
+- Pint (dirty): passing
+- Manual browser check: hit a real snag first — MySQL had stopped running between sessions (a `mysqld` process, not anything this iteration touched), producing a genuine `SQLSTATE[HY000] [2002]` connection-refused error on the first page load. Restarted it, reloaded, and confirmed `/privacy` renders all sections with a real working `mailto:privacy@...` link, the footer shows all four cross-links (`Status`/`Security`/`Privacy`/`Terms`) with correct hrefs, and `/register` now shows working "Terms of Service"/"Privacy Policy" links pointing at the real routes.
+
+Notes:
+
+- **Milestone 8 remaining: production deployment hardened** (queue workers, scheduler, error tracking). That item is also where the security page's "HTTPS set up as part of standard deployment" and this iteration's account-deletion gap both eventually connect to real, enforced configuration rather than documentation alone.

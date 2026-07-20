@@ -37,5 +37,15 @@
     <main class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-10">
         {{ $slot }}
     </main>
+
+    <footer class="border-t border-gray-200 dark:border-gray-800 mt-10">
+        <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
+            <span>&copy; {{ now()->year }} {{ config('app.name', 'Skylight') }}</span>
+            <a href="{{ route('status') }}" class="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Status</a>
+            <a href="{{ route('security') }}" class="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Security</a>
+            <a href="{{ route('privacy') }}" class="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Privacy</a>
+            <a href="{{ route('terms') }}" class="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Terms</a>
+        </div>
+    </footer>
 </body>
 </html>

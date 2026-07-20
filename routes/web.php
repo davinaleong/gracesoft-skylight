@@ -29,6 +29,10 @@ Route::middleware(['throttle:status'])->get('/status', function (SystemStatusSer
 
 Route::get('/security', fn () => view('security'))->name('security');
 
+Route::get('/privacy', fn () => view('privacy'))->name('privacy');
+
+Route::get('/terms', fn () => view('terms'))->name('terms');
+
 Route::middleware(['web', 'guest'])->prefix('auth')->group(function () {
     Route::get('/{provider}/redirect', [SocialiteController::class, 'redirect'])
         ->whereIn('provider', SocialiteController::PROVIDERS)

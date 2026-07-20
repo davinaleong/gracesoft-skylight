@@ -79,6 +79,13 @@
         >
             Create account
         </button>
+
+        <p class="text-center text-xs text-gray-500 dark:text-gray-400">
+            By creating an account, you agree to our
+            <a href="{{ route('terms') }}" class="underline hover:text-gray-700 dark:hover:text-gray-300">Terms of Service</a>
+            and
+            <a href="{{ route('privacy') }}" class="underline hover:text-gray-700 dark:hover:text-gray-300">Privacy Policy</a>.
+        </p>
     </form>
 
     @if (Route::has('login'))
