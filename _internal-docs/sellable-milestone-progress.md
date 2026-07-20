@@ -1082,3 +1082,26 @@ Validation:
 Notes:
 
 - **Milestone 8 remaining: production deployment hardened** (queue workers, scheduler, error tracking). That item is also where the security page's "HTTPS set up as part of standard deployment" and this iteration's account-deletion gap both eventually connect to real, enforced configuration rather than documentation alone.
+
+## 2026-07-19 - Iteration 37 (Milestone 8, IN PROGRESS — not checked off)
+
+Started on: Production deployment hardened (queue workers, scheduler, error tracking e.g. Sentry)
+
+Work done so far, committed as WIP at the user's request to stop and push:
+
+- **Registration rate limiting**: `/register`'s POST route (`register.store`) had no rate limiter at all — flagged explicitly back in Milestone 1 Iteration 3 as deferred to this exact checklist item. Fortify only exposes `config('fortify.limiters')` slots for `login` and `two-factor`, not registration, so forking Fortify's routes wholesale via `Fortify::ignoreRoutes()` (which disables *all* of Fortify's routes, requiring every auth route to be hand-re-declared) was judged too risky for the value here. Instead, added a `register` rate limiter (5/min per IP) in `AppServiceProvider::boot()` and attached it to the already-registered `register.store` named route inside `$this->app->booted(...)`, guaranteeing it runs after every provider (including Fortify's) has finished registering its routes, without touching Fortify internals.
+- **Error tracking**: installed `sentry/sentry-laravel` and published its config to `config/sentry.php`. `php artisan sentry:publish` (the package's interactive DSN-registration helper) hung/timed out — it appears to make a live network call to validate the DSN, which isn't viable against a placeholder DSN — so used the standard non-interactive `vendor:publish --provider=...` instead, which produced the same config file without the network dependency.
+
+Not yet done (do not treat this checklist item as complete):
+
+- `SENTRY_LARAVEL_DSN` (and related `SENTRY_*` tuning envs) not yet added to `.env`/`.env.example`.
+- No verification yet that Sentry actually captures a real error (needs a placeholder-DSN structural check at minimum, ideally a real test DSN).
+- Queue worker hardening not started: no Supervisor (or systemd) unit file documented for running `queue:work` with restart-on-crash, `--tries`, `--max-time`, etc.
+- Scheduler cron entry (`* * * * * php artisan schedule:run`) not yet documented for production.
+- Session/HTTPS hardening flagged in the security-page iteration (`SESSION_SECURE_COOKIE`, trusted proxies) not yet addressed.
+- No tests added yet for the registration rate limiter (should assert the 6th rapid registration attempt within a minute gets throttled).
+
+Validation so far:
+
+- Full suite: passing (281/281, unchanged) — confirms the registration rate limiter and Sentry install didn't break anything, but neither has dedicated test coverage yet.
+- Pint (dirty): passing.

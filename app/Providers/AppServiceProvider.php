@@ -49,6 +49,19 @@ class AppServiceProvider extends ServiceProvider
         // while protecting the cache/storage read-write checks from abuse.
         RateLimiter::for('status', fn () => Limit::perMinute(30)->by(Request::ip()));
 
+        // Rate-limit account registration: 5/min per IP. Fortify only exposes
+        // config('fortify.limiters') slots for 'login' and 'two-factor', not
+        // registration -- flagged as a known gap back in Milestone 1 (no
+        // limiter existed on /register at all). Rather than fork Fortify's
+        // routes wholesale via Fortify::ignoreRoutes() (which would mean
+        // re-declaring every auth route ourselves), attach the limiter to the
+        // already-registered named route once every provider has booted.
+        RateLimiter::for('register', fn () => Limit::perMinute(5)->by(Request::ip()));
+
+        $this->app->booted(function () {
+            $this->app['router']->getRoutes()->getByName('register.store')?->middleware('throttle:register');
+        });
+
         // â”€â”€â”€ Activity logging â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         Event::listen(Login::class, function (Login $event) {
