@@ -115,17 +115,4 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Feedback Recipient
-    |--------------------------------------------------------------------------
-    |
-    | Where the public /feedback form's submissions are sent. Falls back to
-    | the "from" address so the form works out of the box without a separate
-    | inbox being configured.
-    |
-    */
-
-    'feedback_address' => env('FEEDBACK_EMAIL') ?: env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-
 ];
