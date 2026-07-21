@@ -65,6 +65,30 @@ describe('registration', function () {
             ->assertOk()
             ->assertSee(route('register'), false);
     });
+
+    it('rate-limits repeated registration attempts from the same IP', function () {
+        // Deliberately mismatched confirmation on every attempt: a successful
+        // registration would log the guest in, and the `guest` middleware on
+        // /register would then redirect every later attempt away (302)
+        // before the throttle even gets exercised -- not because the limiter
+        // isn't working, but because there's no longer a guest making the
+        // request. Failing validation keeps every attempt a guest request,
+        // which is the realistic shape of a registration-spam attack anyway.
+        $attempt = fn () => $this->post(route('register'), [
+            'name' => 'Test User',
+            'email' => 'throttle-test@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'not-a-match',
+        ]);
+
+        // 5/min allowed -- the first 5 should each fail normal validation
+        // (422/302 with session errors), only the 6th should be throttled.
+        for ($i = 1; $i <= 5; $i++) {
+            $attempt()->assertSessionHasErrors('password');
+        }
+
+        $attempt()->assertStatus(429);
+    });
 });
 
 describe('login', function () {

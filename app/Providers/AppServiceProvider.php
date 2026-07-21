@@ -20,6 +20,7 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Request;
@@ -55,11 +56,20 @@ class AppServiceProvider extends ServiceProvider
         // limiter existed on /register at all). Rather than fork Fortify's
         // routes wholesale via Fortify::ignoreRoutes() (which would mean
         // re-declaring every auth route ourselves), attach the limiter to the
-        // already-registered named route once every provider has booted.
+        // route the moment it's matched. `$this->app->booted()` looked like
+        // the right hook but isn't: Laravel 11's routing is wired up lazily,
+        // so route definitions (including Fortify's) don't exist yet by the
+        // time "booted" fires -- confirmed by instrumenting it directly, the
+        // route lookup returned null there. RouteMatched fires per-request,
+        // after the route is resolved but before Router::gatherMiddleware()
+        // computes (and caches) its middleware list, so appending here is
+        // still seen by the middleware pipeline that actually runs.
         RateLimiter::for('register', fn () => Limit::perMinute(5)->by(Request::ip()));
 
-        $this->app->booted(function () {
-            $this->app['router']->getRoutes()->getByName('register.store')?->middleware('throttle:register');
+        Event::listen(RouteMatched::class, function (RouteMatched $event) {
+            if ($event->route->getName() === 'register.store') {
+                $event->route->middleware('throttle:register');
+            }
         });
 
         // â”€â”€â”€ Activity logging â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

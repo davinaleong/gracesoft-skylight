@@ -89,7 +89,7 @@ _Goal: credible enough for a stranger to trust with their data._
 - [x] Uptime monitoring + status page
 - [x] Security page (mention 2FA, encryption at rest/in transit)
 - [x] Privacy policy + Terms of Service
-- [ ] Production deployment hardened (queue workers, scheduler, error tracking e.g. Sentry)
+- [x] Production deployment hardened (queue workers, scheduler, error tracking e.g. Sentry)
 
 ## Milestone 9 — Go-to-Market Assets
 
