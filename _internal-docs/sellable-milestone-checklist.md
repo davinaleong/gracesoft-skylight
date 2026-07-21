@@ -95,9 +95,9 @@ _Goal: credible enough for a stranger to trust with their data._
 
 _Goal: get the first real users in the door._
 
-- [ ] Marketing landing page (separate from the app) with clear positioning
+- [x] Marketing landing page (separate from the app) with clear positioning
 - [ ] Screenshots/demo video of core workflow
-- [ ] Pricing page
+- [x] Pricing page
 - [ ] Public changelog/roadmap page
 - [ ] Launch posts drafted (Show HN, r/selfhosted, Product Hunt)
 - [ ] Feedback channel set up (email, Discord, or simple form) for early users

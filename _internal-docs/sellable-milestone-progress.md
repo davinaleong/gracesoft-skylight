@@ -1137,3 +1137,35 @@ Notes:
 - **Milestone 8 — Trust & Ops is now fully complete.** All 6 items checked off: S3-compatible storage, tested backups with a real restore drill, uptime monitoring + status page, security page, privacy/terms pages, and this production-hardening pass.
 - The `RouteMatched` timing discovery is worth remembering for any future "attach behavior to a route this app doesn't itself define" need (e.g. if a future package's routes need similar treatment) — `$this->app->booted()` is not the right hook for this in this Laravel version, despite reading as though it should be.
 - **Milestone 9 (Go-to-Market Assets) is the only milestone left, entirely unstarted**: marketing landing page, screenshots/demo video, pricing page, public changelog/roadmap, launch posts, feedback channel.
+
+## 2026-07-21 - Iteration 39 (Milestone 9)
+
+Implemented items (both — see Notes for why they landed together):
+
+- Marketing landing page (separate from the app) with clear positioning
+- Pricing page
+
+Changes made:
+
+- **Root route behavior changed**: `/` used to unconditionally redirect guests straight to `/login` (there was no marketing surface at all — this was the very first thing `tests/Feature/ExampleTest.php`, still carrying its original Laravel-skeleton name, asserted). Guests now get a real landing page at `/` (named `landing`); authenticated users still redirect to `/home` exactly as before. Updated the one test that encoded the old behavior rather than leaving it to silently assert something no longer true.
+- New `resources/views/landing.blade.php` (via `x-layouts.public`): hero with a clear one-line positioning statement ("Kanban boards your team runs on — and your clients can actually see"), a 6-item feature grid, a pricing teaser pulling live from `config('plans')`, and a closing CTA. Every claim in the copy maps to a real, already-shipped feature — Client Portals (Milestone 5), role-based permissions (Milestone 2), REST API/webhooks/Slack (Milestone 7), 2FA/backups (Milestone 1 and 8) — audited against the actual milestone history rather than written as generic SaaS-template copy, continuing this session's running discipline of not overclaiming.
+- New `resources/views/pricing.blade.php` (`/pricing`, public): full three-tier comparison built from `config('plans')`, plus an FAQ section. **Deliberately does not invent feature differences between tiers** — `PlanLimiter` (Milestone 6) only ever gated `board_limit`/`member_limit`, nothing else, so the page says exactly that ("Every plan includes every feature... plans only differ by how many boards and teammates you need") instead of the common SaaS-marketing pattern of paywalling features the code doesn't actually paywall. CTA buttons are context-aware: guests see "Start free"/"Get started" linking to `/register`, authenticated users see the same buttons linking to `/billing` instead (there's no reason to send an already-logged-in visitor back through signup).
+- Extended `x-layouts.public`'s nav and footer with a "Pricing" link (both), and fixed the logo link to go to the new landing page for guests instead of `route('home')` (which would have bounced them straight to `/login` with no way back to the marketing page — harmless before this iteration since there was nothing to bounce *from*, but worth fixing now that a real landing page exists to lose).
+
+Tests added/updated:
+
+- New `tests/Feature/LandingPricingPagesTest.php` (7 tests): landing page is reachable without auth and mentions real shipped features + links to register/pricing, landing page's pricing teaser numbers match `config('plans')` exactly (not hardcoded copy that could drift from the real config), landing page redirects authenticated users to their dashboard, pricing page is reachable without auth and lists every plan from config, pricing page's CTA targets the right route depending on auth state, and an explicit regression guard asserting the page still says "every plan includes every feature" — so a future edit that starts paywalling a real feature per-tier without updating this claim would fail loudly instead of drifting into a false statement silently.
+- Updated `tests/Feature/ExampleTest.php` (renamed in spirit, not in filename — still the default Laravel skeleton test file) to assert the new root-route behavior instead of the old redirect-to-login one, split into two tests (guest sees landing page, authenticated user still redirects).
+- Both new test files needed `RefreshDatabase` added after an initial run failed with "no such table: users" — a reminder-to-self that `User::factory()->create()` anywhere in a test file requires it, easy to forget when a file's first few tests don't happen to need factories.
+
+Validation:
+
+- Full suite: passing (292/292, up from 285)
+- Pint (dirty): passing
+- Manual browser check: loaded `/` as a guest, confirmed the full landing page renders (hero, all 6 feature cards, the live pricing teaser reflecting real Free/Pro/Team numbers, final CTA) and that "See pricing" navigates to a working `/pricing` page with all three tiers and the FAQ section. Logged in as a real test user and confirmed `/` now redirects to `/home` (the Boards dashboard) instead of showing the marketing page. Deleted the test user afterward.
+
+Notes:
+
+- Landing and pricing were built together, not as separate iterations, for the same reason earlier combined iterations were (Milestones 3 and 5): the landing page's pricing teaser needed a real `/pricing` link to point at, and building the teaser without the destination page would have meant either a dead link or throwaway duplicate content — splitting them would have meant touching `x-layouts.public`'s nav/footer twice for one coherent change.
+- No screenshots or product imagery on the landing page yet — deliberately left for the next Milestone 9 item ("Screenshots/demo video of core workflow"), which will need real captures of the running app rather than placeholder graphics.
+- Milestone 9 remaining: screenshots/demo video, public changelog/roadmap page, launch posts, feedback channel.

@@ -13,8 +13,10 @@ use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return auth()->check() ? redirect()->route('home') : redirect()->route('login');
-});
+    return auth()->check() ? redirect()->route('home') : view('landing');
+})->name('landing');
+
+Route::get('/pricing', fn () => view('pricing'))->name('pricing');
 
 // Public status page -- rate-limited since each load does real read/write
 // checks against the cache and storage disks, not just a static page render.
