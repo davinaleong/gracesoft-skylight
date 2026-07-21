@@ -1169,3 +1169,26 @@ Notes:
 - Landing and pricing were built together, not as separate iterations, for the same reason earlier combined iterations were (Milestones 3 and 5): the landing page's pricing teaser needed a real `/pricing` link to point at, and building the teaser without the destination page would have meant either a dead link or throwaway duplicate content — splitting them would have meant touching `x-layouts.public`'s nav/footer twice for one coherent change.
 - No screenshots or product imagery on the landing page yet — deliberately left for the next Milestone 9 item ("Screenshots/demo video of core workflow"), which will need real captures of the running app rather than placeholder graphics.
 - Milestone 9 remaining: screenshots/demo video, public changelog/roadmap page, launch posts, feedback channel.
+
+## 2026-07-21 - Screenshots/demo video: blocked, not implemented (Milestone 9, still unchecked)
+
+Attempted item:
+
+- Screenshots/demo video of core workflow
+
+What happened:
+
+- A demo video is out of scope for this agent regardless of tooling — no recording/narration capability exists here, and this was flagged as a manual follow-up when this checklist item was first scoped.
+- For screenshots, seeded a real demo board (`App\Services\DemoBoardSeeder::seed()` — the same seeder every real signup gets, so this is genuinely representative product content, not staged data) and attempted to capture it via the browser tooling's `screenshot`/`zoom` actions. Every attempt timed out after 30s — tried on the original board page, on a completely fresh preview server + fresh browser tab (ruling out stale app/tab state), and again after an explicit wait. Confirmed the browser tool itself wasn't wholesale broken: `click`, `form_input`, `navigate`, and `wait` all worked normally in the same session — the failure is isolated to the image-capture mechanism specifically, not the app or the tooling generally. Five attempts total; stopped there rather than continuing to retry a mechanism that had already failed identically five times running.
+- Raised this to the user directly rather than silently marking the item done or fabricating placeholder imagery. Confirmed: leave unchecked, document the blocker, move on to the remaining Milestone 9 items.
+
+Ready-to-run capture plan for whenever screenshot tooling works (this session's or a future one's):
+
+1. Seed a demo user + board exactly as above (`DemoBoardSeeder::seed()` on a fresh `User`) — it's the real onboarding content (3 columns, 4 cards including one with an actual checklist), not a hand-crafted "looks good for marketing" board, which is the more honest choice for a screenshot anyway.
+2. Capture, at minimum: the board view (columns + cards, light mode), the same board in dark mode (toggle already exists in the nav), the card detail slide-over open with its checklist/comments visible, and the public Client Portal view of a shared link (the actual differentiator this app's marketing leans on) — `resize_window` to a 1280×800 desktop viewport first for a consistent crop.
+3. Save into `public/screenshots/` (new directory, doesn't exist yet) and reference from `resources/views/landing.blade.php`'s feature grid, which currently has no imagery at all (text-only, shipped in the previous iteration).
+4. Delete the seeded demo user afterward, same cleanup pattern used throughout this session's manual browser checks.
+
+Notes:
+
+- **Checklist item intentionally left unchecked** — this is a partial/blocked attempt, not a completed iteration, and should not be conflated with the other entries in this log that represent shipped work.
