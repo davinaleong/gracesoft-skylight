@@ -52,9 +52,9 @@
     </div>
 
     {{-- Pricing teaser --}}
-    <div class="py-10">
+    <div class="pt-16 pb-10 border-t border-gray-200 dark:border-gray-800">
         <h2 class="text-center text-2xl font-semibold mb-8">Simple pricing, no seat games</h2>
-        <div class="grid gap-6 sm:grid-cols-3 max-w-4xl mx-auto">
+        <div class="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
             @foreach ($plans as $key => $plan)
                 <div class="rounded-xl bg-white dark:bg-gray-900 p-6 shadow-sm ring-1 ring-gray-200 dark:ring-gray-800 text-center">
                     <h3 class="font-semibold">{{ $plan['name'] }}</h3>

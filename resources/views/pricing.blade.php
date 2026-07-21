@@ -11,7 +11,7 @@
             </p>
         </div>
 
-        <div class="grid gap-6 sm:grid-cols-3">
+        <div class="grid gap-6 md:grid-cols-3">
             @foreach ($plans as $key => $plan)
                 <div class="rounded-xl bg-white dark:bg-gray-900 p-6 shadow-sm ring-1 {{ $key === 'pro' ? 'ring-2 ring-indigo-500' : 'ring-gray-200 dark:ring-gray-800' }}">
                     @if ($key === 'pro')
