@@ -116,5 +116,9 @@
 
         {{-- API tokens --}}
         @livewire('profile.api-tokens')
+
+        <p class="text-center text-sm text-gray-500 dark:text-gray-400">
+            Have feedback or found a bug? <a href="{{ route('feedback') }}" class="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">Let us know</a>.
+        </p>
     </div>
 </x-layouts.app>

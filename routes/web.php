@@ -20,6 +20,8 @@ Route::get('/pricing', fn () => view('pricing'))->name('pricing');
 
 Route::get('/changelog', fn () => view('changelog'))->name('changelog');
 
+Route::get('/feedback', fn () => view('feedback'))->name('feedback');
+
 // Public status page -- rate-limited since each load does real read/write
 // checks against the cache and storage disks, not just a static page render.
 Route::middleware(['throttle:status'])->get('/status', function (SystemStatusService $status) {

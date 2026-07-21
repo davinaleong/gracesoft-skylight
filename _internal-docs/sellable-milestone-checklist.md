@@ -99,8 +99,8 @@ _Goal: get the first real users in the door._
 - [ ] Screenshots/demo video of core workflow
 - [x] Pricing page
 - [x] Public changelog/roadmap page
-- [ ] Launch posts drafted (Show HN, r/selfhosted, Product Hunt)
-- [ ] Feedback channel set up (email, Discord, or simple form) for early users
+- [x] Launch posts drafted (Show HN, r/selfhosted, Product Hunt)
+- [x] Feedback channel set up (email, Discord, or simple form) for early users
 
 ---
 

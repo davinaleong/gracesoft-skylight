@@ -1219,3 +1219,35 @@ Validation:
 Notes:
 
 - Milestone 9 remaining: launch posts (draft copy, not published — publishing to external platforms needs explicit user permission and real accounts) and a feedback channel. Screenshots/demo video stays blocked per the previous entry.
+
+## 2026-07-21 - Iteration 41 (Milestone 9)
+
+Implemented items (both — see Notes for why they landed together):
+
+- Launch posts drafted (Show HN, r/selfhosted, Product Hunt)
+- Feedback channel set up (email, Discord, or simple form) for early users
+
+Changes made:
+
+- **Launch posts**: new `_internal-docs/launch-posts.md` — draft copy for all three platforms, each tuned to that audience (Show HN and r/selfhosted lean technical/architectural, Product Hunt leans outcome-and-screenshots), plus a "notes for whoever posts these" section flagging that r/selfhosted specifically will ask about Docker/self-host friction that isn't built yet, and that Product Hunt will lean harder on the still-blocked screenshots item than the other two. **Explicitly not published anywhere** — posting to Show HN/Reddit/Product Hunt requires a real account on each platform and is exactly the kind of one-time, externally-visible action that shouldn't be automated; these are drafts for a human to review and post.
+- **Feedback channel**: chose a simple in-app form over email-only or a Discord link. A bare `mailto:` would have worked but a form (a) prefills name/email for logged-in users so they don't have to retype what the app already knows, and (b) doesn't expose a raw email address to scrapers. A Discord link was ruled out entirely — there is no real Discord server for this product, and linking to one that doesn't exist would be exactly the kind of fabricated claim this whole session's public-facing pages have avoided.
+    - New `App\Notifications\FeedbackReceivedNotification` (queued, mail-only) with `replyTo($fromEmail, $fromName)` set so the claim in its own body ("reply directly to this email to respond to them") is actually true, not aspirational copy.
+    - New `mail.feedback_address` config value (`env('FEEDBACK_EMAIL') ?: env('MAIL_FROM_ADDRESS', ...)`) — used the `?:` form deliberately, not `env(key, default)`, per this session's now-established pattern (Sentry, backups) for env vars this app ships as present-but-blank until a real value exists.
+    - New public `/feedback` page (`resources/views/feedback.blade.php` + `livewire/feedback.blade.php`, via `x-layouts.public`): prefills name/email for authenticated visitors, sends via `Notification::route('mail', ...)->notify()` (the same on-demand-notification pattern already used for workspace invites), and shows an inline success state.
+    - **Caught and fixed my own bug before it shipped**: the route itself had `throttle:feedback` middleware on the GET page load, which does nothing to protect the actual mutating action — Livewire's `send()` method call goes through Livewire's own AJAX endpoint, not this page's route, so the route-level throttle never touches it. Fixed by rate-limiting inside `send()` directly with `RateLimiter::tooManyAttempts()`/`hit()` keyed by IP (5/min), which protects the actual email-sending action regardless of transport. Removed the now-pointless route-level throttle.
+    - Linked from `x-layouts.public`'s shared footer (alongside Pricing/Changelog/Status/Security/Privacy/Terms) and from the authenticated Profile page ("Have feedback or found a bug? Let us know").
+
+Tests added/updated:
+
+- New `tests/Feature/FeedbackTest.php` (6 tests): reachable without authentication, prefills name/email for an authenticated user and leaves them blank for a guest, sends a real on-demand notification to the configured address with the sender's email set as reply-to (asserted via `Notification::assertSentOnDemand`'s closure, checking the notifiable's mail route, not just that *a* notification fired), requires all three fields, and — the one that actually exercises the fix above — 5 rapid submissions succeed and the 6th is rejected with a form error, with `Notification::assertSentOnDemandTimes(..., 5)` proving the 6th genuinely didn't send rather than just checking the UI state.
+
+Validation:
+
+- Full suite: passing (301/301, up from 295)
+- Pint (dirty): passing
+- Manual browser check: loaded `/feedback` as a guest, confirmed the footer's new "Feedback" link is present, submitted a real message through the live form, confirmed the inline "Thanks — your feedback was sent" success state rendered, and confirmed via `php artisan tinker` that a real `FeedbackReceivedNotification` job actually landed in the `jobs` table (queue driver is `database`) addressed correctly — not just that the UI claimed success. Cleared the test job from the queue afterward.
+
+Notes:
+
+- These two landed together because the feedback channel's build was quick enough that splitting it from the launch-posts documentation pass would have been an artificial boundary — same reasoning as this session's other combined iterations (Milestones 3, 5, and the landing+pricing pair).
+- **This closes every buildable item in Milestone 9.** The one remaining checklist line — Screenshots/demo video of core workflow — stays unchecked and blocked on browser screenshot tooling per the dedicated entry above; everything else in the sellable-milestone-checklist is now checked off.

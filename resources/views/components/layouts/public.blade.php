@@ -48,6 +48,7 @@
             <span>&copy; {{ now()->year }} {{ config('app.name', 'Skylight') }}</span>
             <a href="{{ route('pricing') }}" class="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Pricing</a>
             <a href="{{ route('changelog') }}" class="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Changelog</a>
+            <a href="{{ route('feedback') }}" class="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Feedback</a>
             <a href="{{ route('status') }}" class="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Status</a>
             <a href="{{ route('security') }}" class="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Security</a>
             <a href="{{ route('privacy') }}" class="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Privacy</a>
