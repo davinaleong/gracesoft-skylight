@@ -98,7 +98,7 @@ _Goal: get the first real users in the door._
 - [x] Marketing landing page (separate from the app) with clear positioning
 - [ ] Screenshots/demo video of core workflow
 - [x] Pricing page
-- [ ] Public changelog/roadmap page
+- [x] Public changelog/roadmap page
 - [ ] Launch posts drafted (Show HN, r/selfhosted, Product Hunt)
 - [ ] Feedback channel set up (email, Discord, or simple form) for early users
 

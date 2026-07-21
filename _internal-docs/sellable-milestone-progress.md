@@ -1192,3 +1192,30 @@ Ready-to-run capture plan for whenever screenshot tooling works (this session's 
 Notes:
 
 - **Checklist item intentionally left unchecked** — this is a partial/blocked attempt, not a completed iteration, and should not be conflated with the other entries in this log that represent shipped work.
+
+## 2026-07-21 - Iteration 40 (Milestone 9)
+
+Implemented item:
+
+- Public changelog/roadmap page
+
+Changes made:
+
+- New `resources/views/changelog.blade.php` (`/changelog`, public, `x-layouts.public`). Both halves are built from real project history rather than invented:
+    - **Changelog**: grouped into "July 2026" (this session's Milestone 7-9 work: REST API, webhooks, Slack, Zapier/Make, data export, S3 storage, tested backups, status/security pages, privacy/terms, production hardening, this marketing site) and "Earlier" (everything from Milestones 1-6: Client Portals, Stripe billing, team workspaces/roles, onboarding, UX polish, checklists/comments/attachments, 2FA/email verification). Rewritten in customer-facing language — the internal `sellable-milestone-progress.md` entries this pulls from are full of dev-facing detail ("real bug caught while writing tests," exact class/method names) that has no place on a public page; the translation exercise was picking *what a user would care about*, not restating the internal log.
+    - **Roadmap**: every item is a real, already-documented limitation pulled directly from this session's own iteration notes — the multi-workspace-switcher gap (flagged repeatedly since Milestone 2), self-serve account deletion (flagged in the privacy-policy iteration), Client Portal custom branding (flagged in Milestone 5), broader REST API resource coverage (flagged in the REST API iteration), and per-plan storage limits (flagged in Milestone 6). Explicitly framed as "real, currently-known gaps — not a wishlist," since inventing forward-looking feature promises the team has no actual plan for would be exactly the kind of overclaiming this whole session's public-facing pages have deliberately avoided.
+- Added a "Changelog" link to `x-layouts.public`'s shared footer, alongside the existing Pricing/Status/Security/Privacy/Terms links.
+
+Tests added/updated:
+
+- New `tests/Feature/ChangelogPageTest.php` (3 tests): reachable without authentication and mentions real shipped features (Client Portals, Stripe billing, REST API) plus the Roadmap section, inline links to `/status` and `/security` resolve to real routes rather than dead anchors, and the changelog link appears on another public page's footer (proving the shared-layout wiring, not just the page itself).
+
+Validation:
+
+- Full suite: passing (295/295, up from 292)
+- Pint (dirty): passing
+- Manual browser check: loaded `/changelog` as a guest, confirmed both the Changelog and Roadmap sections render with all bullet points and correctly-resolved inline links, and confirmed the shared footer's new "Changelog" link is present and points at the right URL.
+
+Notes:
+
+- Milestone 9 remaining: launch posts (draft copy, not published — publishing to external platforms needs explicit user permission and real accounts) and a feedback channel. Screenshots/demo video stays blocked per the previous entry.
