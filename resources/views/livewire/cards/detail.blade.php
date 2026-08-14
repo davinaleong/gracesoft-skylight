@@ -7,6 +7,7 @@ use App\Models\ChecklistItem;
 use App\Models\Comment;
 use App\Models\MarkdownNote;
 use Illuminate\Support\Str;
+use League\Flysystem\FilesystemException;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
@@ -31,8 +32,8 @@ new class extends Component {
     // Comments
     public string $newCommentBody = '';
 
-    // Attachments — image upload
-    public $imageUpload = null;
+    // Attachments — file upload (image or PDF)
+    public $fileUpload = null;
 
     // Attachments — link
     public string $linkUrl = '';
@@ -45,6 +46,19 @@ new class extends Component {
     public ?int $editingNoteId = null;
     public bool $showNoteForm = false;
 
+    // Attachments — item-level (checklist / comment / note)
+    public ?string $attachTargetType = null;
+
+    public ?int $attachTargetId = null;
+
+    public $itemFileUpload = null;
+
+    public string $itemLinkUrl = '';
+
+    public string $itemLinkName = '';
+
+    public bool $showItemLinkForm = false;
+
     public function mount(Card $card): void
     {
         $this->card = $card;
@@ -55,7 +69,7 @@ new class extends Component {
     #[Computed]
     public function checklists()
     {
-        return $this->card->checklists()->with('items')->get();
+        return $this->card->checklists()->with(['items', 'attachments.user'])->get();
     }
 
     public function saveDates(): void
@@ -117,7 +131,7 @@ new class extends Component {
     #[Computed]
     public function comments()
     {
-        return $this->card->comments()->with('user')->get();
+        return $this->card->comments()->with(['user', 'attachments.user'])->get();
     }
 
     public function addComment(): void
@@ -151,27 +165,41 @@ new class extends Component {
     #[Computed]
     public function markdownNotes()
     {
-        return $this->card->markdownNotes()->with('user')->get();
+        return $this->card->markdownNotes()->with(['user', 'attachments.user'])->get();
     }
 
-    public function uploadImage(): void
+    public function uploadFile(): void
     {
-        $this->validate([
-            'imageUpload' => ['required', 'image', 'max:10240'], // 10 MB
-        ]);
+        try {
+            $this->validate([
+                'fileUpload' => $this->fileUploadRules(),
+            ]);
+        } catch (FilesystemException) {
+            $this->reset('fileUpload');
+            $this->addError('fileUpload', 'This upload did not complete. Please choose the file again.');
 
-        $path = $this->imageUpload->store('attachments', config('filesystems.default'));
+            return;
+        }
+
+        // Capture metadata before store() — for same-disk uploads, store() moves the
+        // underlying S3 object, and the temp file wrapper still points at the old
+        // (now-deleted) key, so any metadata read after the move fails.
+        $name = $this->fileUpload->getClientOriginalName();
+        $mimeType = $this->fileUpload->getMimeType();
+        $size = $this->fileUpload->getSize();
+
+        $path = $this->fileUpload->store('attachments', config('filesystems.default'));
 
         $this->card->attachments()->create([
             'user_id' => auth()->id(),
-            'type' => Attachment::TYPE_IMAGE,
+            'type' => $this->resolveAttachmentType($mimeType),
             'path' => $path,
-            'name' => $this->imageUpload->getClientOriginalName(),
-            'mime_type' => $this->imageUpload->getMimeType(),
-            'size' => $this->imageUpload->getSize(),
+            'name' => $name,
+            'mime_type' => $mimeType,
+            'size' => $size,
         ]);
 
-        $this->reset('imageUpload');
+        $this->reset('fileUpload');
     }
 
     public function addLink(): void
@@ -203,6 +231,118 @@ new class extends Component {
         }
 
         $attachment->delete();
+    }
+
+    // ─── Item-level attachments (checklist / comment / note) ──────────────────
+
+    public function openAttachmentForm(string $type, int $id): void
+    {
+        $this->resolveAttachTarget($type, $id);
+
+        $this->attachTargetType = $type;
+        $this->attachTargetId = $id;
+        $this->reset('itemFileUpload', 'itemLinkUrl', 'itemLinkName', 'showItemLinkForm');
+    }
+
+    public function closeAttachmentForm(): void
+    {
+        $this->reset('attachTargetType', 'attachTargetId', 'itemFileUpload', 'itemLinkUrl', 'itemLinkName', 'showItemLinkForm');
+    }
+
+    public function uploadItemFile(): void
+    {
+        try {
+            $this->validate([
+                'itemFileUpload' => $this->fileUploadRules(),
+            ]);
+        } catch (FilesystemException) {
+            $this->reset('itemFileUpload');
+            $this->addError('itemFileUpload', 'This upload did not complete. Please choose the file again.');
+
+            return;
+        }
+
+        $target = $this->resolveAttachTarget($this->attachTargetType, $this->attachTargetId);
+
+        // Capture metadata before store() — see note in uploadFile().
+        $name = $this->itemFileUpload->getClientOriginalName();
+        $mimeType = $this->itemFileUpload->getMimeType();
+        $size = $this->itemFileUpload->getSize();
+
+        $path = $this->itemFileUpload->store('attachments', config('filesystems.default'));
+
+        $target->attachments()->create([
+            'user_id' => auth()->id(),
+            'type' => $this->resolveAttachmentType($mimeType),
+            'path' => $path,
+            'name' => $name,
+            'mime_type' => $mimeType,
+            'size' => $size,
+        ]);
+
+        $this->closeAttachmentForm();
+    }
+
+    public function addItemLink(): void
+    {
+        $this->validate([
+            'itemLinkUrl' => ['required', 'url', 'max:2048'],
+            'itemLinkName' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $target = $this->resolveAttachTarget($this->attachTargetType, $this->attachTargetId);
+
+        $target->attachments()->create([
+            'user_id' => auth()->id(),
+            'type' => Attachment::TYPE_LINK,
+            'path' => $this->itemLinkUrl,
+            'name' => $this->itemLinkName ?: $this->itemLinkUrl,
+        ]);
+
+        $this->closeAttachmentForm();
+    }
+
+    public function deleteItemAttachment(int $attachmentId): void
+    {
+        $attachment = Attachment::whereIn('attachable_type', [Checklist::class, Comment::class, MarkdownNote::class])
+            ->where('user_id', auth()->id())
+            ->findOrFail($attachmentId);
+
+        $owner = $attachment->attachable;
+        abort_unless($owner && $owner->card_id === $this->card->id, 404);
+
+        if ($attachment->isImage()) {
+            \Illuminate\Support\Facades\Storage::disk(config('filesystems.default'))
+                ->delete($attachment->path);
+        }
+
+        $attachment->delete();
+    }
+
+    /**
+     * Resolve and authorize the target of an item-level attachment, scoped to the current card.
+     */
+    private function resolveAttachTarget(string $type, int $id): Checklist|Comment|MarkdownNote
+    {
+        return match ($type) {
+            'checklist' => $this->card->checklists()->findOrFail($id),
+            'comment' => $this->card->comments()->findOrFail($id),
+            'note' => $this->card->markdownNotes()->findOrFail($id),
+            default => abort(404),
+        };
+    }
+
+    /** @return array<int, mixed> */
+    private function fileUploadRules(): array
+    {
+        return ['required', 'file', 'mimes:jpg,jpeg,png,gif,webp,svg,bmp,pdf', 'max:10240']; // 10 MB
+    }
+
+    private function resolveAttachmentType(string $mimeType): string
+    {
+        return str_starts_with($mimeType, 'image/')
+            ? Attachment::TYPE_IMAGE
+            : Attachment::TYPE_DOCUMENT;
     }
 
     public function saveNote(): void
@@ -250,7 +390,10 @@ new class extends Component {
 };
 ?>
 
-<div class="space-y-6">
+<div class="space-y-6"
+    x-data="{ lightboxOpen: false, lightboxUrl: null, lightboxKind: null, lightboxName: null }"
+    @open-lightbox.window="lightboxOpen = true; lightboxUrl = $event.detail.url; lightboxKind = $event.detail.kind; lightboxName = $event.detail.name"
+>
     {{-- Card title --}}
     <div @if ($card->color) data-card-color="{{ $card->color }}" @endif class="rounded-lg px-3 py-2 -mx-3 -mt-2 {{ $card->color ? '' : '' }}">
         <h2 class="text-lg font-semibold">{{ $card->title }}</h2>
@@ -354,6 +497,18 @@ new class extends Component {
                         + Add item
                     </button>
                 @endif
+
+                {{-- Checklist attachments --}}
+                @if ($checklist->attachments->isNotEmpty())
+                    <div class="mt-3 space-y-1.5">
+                        @foreach ($checklist->attachments as $attachment)
+                            @include('livewire.cards.partials.attachment-row', ['attachment' => $attachment, 'deleteAction' => 'deleteItemAttachment'])
+                        @endforeach
+                    </div>
+                @endif
+                <div class="mt-2">
+                    @include('livewire.cards.partials.attachment-form', ['type' => 'checklist', 'id' => $checklist->id])
+                </div>
             </div>
         @endforeach
 
@@ -408,6 +563,18 @@ new class extends Component {
                             </div>
                         </div>
                         <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ $comment->body }}</p>
+
+                        {{-- Comment attachments --}}
+                        @if ($comment->attachments->isNotEmpty())
+                            <div class="mt-2 space-y-1.5">
+                                @foreach ($comment->attachments as $attachment)
+                                    @include('livewire.cards.partials.attachment-row', ['attachment' => $attachment, 'deleteAction' => 'deleteItemAttachment'])
+                                @endforeach
+                            </div>
+                        @endif
+                        <div class="mt-2">
+                            @include('livewire.cards.partials.attachment-form', ['type' => 'comment', 'id' => $comment->id])
+                        </div>
                     </div>
                 @endforeach
             </div>
@@ -422,36 +589,18 @@ new class extends Component {
 
         {{-- Existing attachments --}}
         @foreach ($this->attachments as $attachment)
-            <div class="flex items-center gap-3 rounded-lg bg-white dark:bg-gray-900 p-3 ring-1 ring-gray-200 dark:ring-gray-800">
-                @if ($attachment->isImage())
-                    <svg class="h-5 w-5 shrink-0 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
-                    <a href="{{ $attachment->temporaryUrl() }}" target="_blank" rel="noopener noreferrer" class="min-w-0 flex-1 truncate text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
-                        {{ $attachment->name ?? 'Image' }}
-                    </a>
-                @else
-                    <svg class="h-5 w-5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>
-                    <a href="{{ $attachment->path }}" target="_blank" rel="noopener noreferrer" class="min-w-0 flex-1 truncate text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
-                        {{ $attachment->name }}
-                    </a>
-                @endif
-                @if ($attachment->user_id === auth()->id())
-                    <button wire:click="deleteAttachment({{ $attachment->id }})" wire:confirm="Remove this attachment?"
-                        class="shrink-0 text-gray-400 hover:text-red-500 transition-colors" aria-label="Delete attachment">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-                    </button>
-                @endif
-            </div>
+            @include('livewire.cards.partials.attachment-row', ['attachment' => $attachment, 'deleteAction' => 'deleteAttachment'])
         @endforeach
 
-        {{-- Image upload --}}
-        <form wire:submit="uploadImage" class="space-y-2">
+        {{-- File upload (image or PDF) --}}
+        <form wire:submit="uploadFile" class="space-y-2">
             <div>
-                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Upload image</label>
-                <input type="file" wire:model="imageUpload" accept="image/*"
+                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Upload file (image or PDF)</label>
+                <input type="file" wire:model="fileUpload" accept="image/*,application/pdf"
                     class="block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900/30 dark:file:text-indigo-300">
-                @error('imageUpload') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                @error('fileUpload') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
-            @if ($imageUpload)
+            @if ($fileUpload)
                 <button type="submit" class="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-xs font-medium text-white">
                     Upload
                 </button>
@@ -505,6 +654,18 @@ new class extends Component {
                     </div>
                 </div>
                 <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-3 whitespace-pre-line">{{ $note->content }}</p>
+
+                {{-- Note attachments --}}
+                @if ($note->attachments->isNotEmpty())
+                    <div class="mt-2 space-y-1.5">
+                        @foreach ($note->attachments as $attachment)
+                            @include('livewire.cards.partials.attachment-row', ['attachment' => $attachment, 'deleteAction' => 'deleteItemAttachment'])
+                        @endforeach
+                    </div>
+                @endif
+                <div class="mt-2">
+                    @include('livewire.cards.partials.attachment-form', ['type' => 'note', 'id' => $note->id])
+                </div>
             </div>
         @endforeach
 
@@ -535,6 +696,34 @@ new class extends Component {
             </button>
         @endif
     </div>
-</div>
 
+    {{-- Attachment lightbox --}}
+    <template x-teleport="body">
+        <div x-show="lightboxOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+            <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="lightboxOpen = false"></div>
+            <div class="relative z-10 flex max-h-[90vh] w-full max-w-4xl flex-col rounded-2xl bg-white dark:bg-gray-900 shadow-2xl">
+                <div class="flex shrink-0 items-center justify-between border-b border-gray-100 dark:border-gray-800 px-4 py-3">
+                    <p class="min-w-0 truncate text-sm font-medium text-gray-700 dark:text-gray-300" x-text="lightboxName"></p>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <a :href="lightboxUrl" target="_blank" rel="noopener noreferrer"
+                            class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Open in new tab">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                        </a>
+                        <button type="button" @click="lightboxOpen = false"
+                            class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Close">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="min-h-0 flex-1 overflow-auto rounded-b-2xl bg-gray-50 dark:bg-gray-950">
+                    <template x-if="lightboxKind === 'image'">
+                        <img :src="lightboxUrl" :alt="lightboxName" class="mx-auto max-h-[75vh] w-auto object-contain">
+                    </template>
+                    <template x-if="lightboxKind === 'pdf'">
+                        <iframe :src="lightboxUrl" class="h-[75vh] w-full" title="PDF preview"></iframe>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </template>
 </div>

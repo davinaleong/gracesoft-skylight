@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 #[Fillable(['column_id', 'title', 'description', 'starts_at', 'ends_at', 'position', 'color'])]
 class Card extends Model
@@ -44,9 +45,9 @@ class Card extends Model
         return $this->hasMany(Comment::class)->latest();
     }
 
-    public function attachments(): HasMany
+    public function attachments(): MorphMany
     {
-        return $this->hasMany(Attachment::class)->latest();
+        return $this->morphMany(Attachment::class, 'attachable')->latest();
     }
 
     public function markdownNotes(): HasMany

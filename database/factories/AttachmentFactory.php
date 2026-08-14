@@ -15,7 +15,8 @@ class AttachmentFactory extends Factory
     public function definition(): array
     {
         return [
-            'card_id' => Card::factory(),
+            'attachable_type' => Card::class,
+            'attachable_id' => Card::factory(),
             'user_id' => User::factory(),
             'type' => Attachment::TYPE_LINK,
             'path' => fake()->url(),
