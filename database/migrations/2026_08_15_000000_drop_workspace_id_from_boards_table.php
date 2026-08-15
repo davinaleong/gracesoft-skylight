@@ -13,6 +13,10 @@ return new class extends Migration
     {
         if (Schema::hasColumn('boards', 'workspace_id')) {
             Schema::table('boards', function (Blueprint $table) {
+                $table->dropForeign('boards_workspace_id_foreign');
+            });
+
+            Schema::table('boards', function (Blueprint $table) {
                 $table->dropColumn('workspace_id');
             });
         }
