@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\CardFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +29,28 @@ class Card extends Model
     public function column(): BelongsTo
     {
         return $this->belongsTo(Column::class);
+    }
+
+    /**
+     * Cards ending today, scoped to the given user's own boards.
+     */
+    public function scopeDueToday(Builder $query, User $user): Builder
+    {
+        return $query
+            ->whereHas('column.board', fn (Builder $q) => $q->where('user_id', $user->id))
+            ->whereDate('ends_at', now()->toDateString());
+    }
+
+    /**
+     * Cards past their end date that haven't been resolved, scoped to the
+     * given user's own boards.
+     */
+    public function scopeOverdue(Builder $query, User $user): Builder
+    {
+        return $query
+            ->whereHas('column.board', fn (Builder $q) => $q->where('user_id', $user->id))
+            ->whereNotNull('ends_at')
+            ->whereDate('ends_at', '<', now()->toDateString());
     }
 
     public function labels(): BelongsToMany

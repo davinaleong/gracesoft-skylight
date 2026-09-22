@@ -15,17 +15,13 @@ class SendCardDueReminders extends Command
 {
     public function handle(): int
     {
-        $today = now()->toDateString();
         $sent = 0;
 
-        User::chunk(100, function (iterable $users) use ($today, &$sent) {
+        User::chunk(100, function (iterable $users) use (&$sent) {
             foreach ($users as $user) {
                 // Due today
                 if ($user->wantsNotification('due_today')) {
-                    $dueToday = Card::whereHas('column.board', fn ($q) => $q->where('user_id', $user->id))
-                        ->whereDate('ends_at', $today)
-                        ->with('column.board')
-                        ->get();
+                    $dueToday = Card::dueToday($user)->with('column.board')->get();
 
                     if ($dueToday->isNotEmpty()) {
                         $user->notify(new CardDueNotification($dueToday, CardDueNotification::TYPE_DUE_TODAY));
@@ -35,11 +31,7 @@ class SendCardDueReminders extends Command
 
                 // Overdue
                 if ($user->wantsNotification('overdue')) {
-                    $overdue = Card::whereHas('column.board', fn ($q) => $q->where('user_id', $user->id))
-                        ->whereNotNull('ends_at')
-                        ->whereDate('ends_at', '<', $today)
-                        ->with('column.board')
-                        ->get();
+                    $overdue = Card::overdue($user)->with('column.board')->get();
 
                     if ($overdue->isNotEmpty()) {
                         $user->notify(new CardDueNotification($overdue, CardDueNotification::TYPE_OVERDUE));
