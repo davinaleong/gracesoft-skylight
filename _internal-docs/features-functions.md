@@ -1,6 +1,6 @@
 # GraceSoft Skylight: Features and Functions Inventory
 
-Last updated: 2026-07-14
+Last updated: 2026-08-14
 
 ## 1. App Overview
 
@@ -70,10 +70,14 @@ GraceSoft Skylight is a Laravel + Livewire Kanban-style board application with:
     - Add comment
     - Delete own comment
 - Attachments:
-    - Upload image attachments
+    - Upload image or PDF document attachments (restricted by MIME type; other formats rejected)
     - Add URL link attachments
-    - Open image via temporary URL
-    - Delete own attachments
+    - Attachments can be associated with a card, a checklist, a comment, or a markdown note (polymorphic), each supporting multiple attachments
+    - Image thumbnails and PDF-icon thumbnails shown inline in the attachment list
+    - Click thumbnail to open a lightbox preview (image via `<img>`, PDF via inline browser viewer), with an "open in new tab" link
+    - Open attachments via short-lived (~5 min) temporary URL
+    - Delete own attachments (also removes the underlying file for image/document types)
+    - Graceful retry message (instead of a server error) if a file upload does not finish transferring
 - Markdown notes:
     - Create note
     - Edit own note
@@ -192,8 +196,9 @@ Notable domain capabilities:
 
 - Board route key is UUID slug
 - Board share link token stored as hash, not plaintext
-- Attachments support image and external link types
-- Temporary URLs generated for image attachments where supported
+- Attachments support image, PDF document, and external link types
+- Attachment is polymorphic (attachable_type/attachable_id): can belong to Card, Checklist, Comment, or MarkdownNote
+- Temporary URLs generated for image/document attachments where supported
 - User notification preferences support due_today and overdue toggles
 
 ## 6. Full Function Inventory by File
@@ -244,9 +249,11 @@ This section lists all currently implemented project functions and methods in ap
 
 ### 6.10 app/Models/Attachment.php
 
-- card(): BelongsTo
+- attachable(): MorphTo
 - user(): BelongsTo
 - isImage(): bool
+- isDocument(): bool
+- isPdf(): bool
 - isLink(): bool
 - temporaryUrl(int $expiryMinutes = 5): string
 - casts(): array
@@ -278,7 +285,7 @@ This section lists all currently implemented project functions and methods in ap
 - labels(): BelongsToMany
 - checklists(): HasMany
 - comments(): HasMany
-- attachments(): HasMany
+- attachments(): MorphMany
 - markdownNotes(): HasMany
 - casts(): array
 
@@ -286,6 +293,7 @@ This section lists all currently implemented project functions and methods in ap
 
 - card(): BelongsTo
 - items(): HasMany
+- attachments(): MorphMany
 
 ### 6.15 app/Models/ChecklistItem.php
 
@@ -303,6 +311,7 @@ This section lists all currently implemented project functions and methods in ap
 
 - card(): BelongsTo
 - user(): BelongsTo
+- attachments(): MorphMany
 
 ### 6.18 app/Models/Label.php
 
@@ -313,6 +322,7 @@ This section lists all currently implemented project functions and methods in ap
 
 - card(): BelongsTo
 - user(): BelongsTo
+- attachments(): MorphMany
 
 ### 6.20 app/Models/ShareLinkAccess.php
 
@@ -453,9 +463,17 @@ This section lists all currently implemented project functions and methods in ap
 - deleteComment(int $commentId): void
 - attachments()
 - markdownNotes()
-- uploadImage(): void
+- uploadFile(): void — uploads image or PDF as a card-level attachment; catches FilesystemException from an incomplete temp upload and shows a retryable error instead of a 500
 - addLink(): void
 - deleteAttachment(int $attachmentId): void
+- openAttachmentForm(string $type, int $id): void — opens the item-level attachment form for a checklist/comment/note (only one open at a time)
+- closeAttachmentForm(): void
+- uploadItemFile(): void — uploads image or PDF as a checklist/comment/note-level attachment for whichever target is currently open; same FilesystemException handling as uploadFile()
+- addItemLink(): void — adds a link attachment to the currently open item-level target
+- deleteItemAttachment(int $attachmentId): void — scoped to checklist/comment/note attachments belonging to the current card
+- resolveAttachTarget(string $type, int $id): Checklist|Comment|MarkdownNote (private) — authorizes the item-level attachment target against the current card
+- fileUploadRules(): array (private) — shared validation rules (image or PDF, max 10MB) for both uploadFile() and uploadItemFile()
+- resolveAttachmentType($file): string (private) — derives TYPE_IMAGE vs TYPE_DOCUMENT from the uploaded file's actual MIME type
 - saveNote(): void
 - editNote(int $noteId): void
 - deleteNote(int $noteId): void
@@ -467,6 +485,8 @@ This section lists all currently implemented project functions and methods in ap
 ## 7. Known Notes and Gaps
 
 - resources/views/livewire/boards/create-board-form.blade.php currently appears to be a placeholder and not an active feature surface.
+- The public share-link viewer (resources/views/viewer/board.blade.php) only reads card-level attachments; it does not yet surface checklist/comment/note-level attachments added via the new polymorphic association (2026-08-14).
+- resources/views/livewire/cards/partials/attachment-row.blade.php and attachment-form.blade.php (added 2026-08-14) are shared partials reused across the card, checklist, comment, and note attachment sections in cards/detail.blade.php — update all four call sites if the row/form markup changes.
 
 ## 8. Suggested Maintenance Process
 

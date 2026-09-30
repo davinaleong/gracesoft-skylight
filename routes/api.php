@@ -1,10 +1,17 @@
 <?php
 
+use App\Http\Controllers\Api\Bot\BoardsController;
+use App\Http\Controllers\Api\Bot\CardsController;
 use App\Http\Controllers\Api\V1\BoardController;
 use App\Http\Controllers\Api\V1\CardController;
 use App\Http\Controllers\Api\V1\ColumnController;
 use App\Http\Controllers\Api\V1\CommentController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/user', function (Request $request) {
+    return $request->user();
+})->middleware('auth:sanctum');
 
 Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->name('api.v1.')->group(function () {
     Route::apiResource('boards', BoardController::class);
@@ -23,4 +30,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->name('api.v1.
     Route::get('cards/{card}/comments', [CommentController::class, 'index'])->name('cards.comments.index');
     Route::post('cards/{card}/comments', [CommentController::class, 'store'])->name('cards.comments.store');
     Route::delete('comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+});
+
+Route::prefix('bot')->middleware('auth:sanctum')->group(function (): void {
+    Route::get('/cards/due', [CardsController::class, 'due']);
+    Route::get('/boards/summary', [BoardsController::class, 'summary']);
 });

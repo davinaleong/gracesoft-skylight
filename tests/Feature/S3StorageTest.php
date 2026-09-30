@@ -79,8 +79,8 @@ describe('S3-compatible storage', function () {
         $file = UploadedFile::fake()->image('screenshot.png', 400, 300);
 
         Volt::test('cards.detail', ['card' => $card])
-            ->set('imageUpload', $file)
-            ->call('uploadImage')
+            ->set('fileUpload', $file)
+            ->call('uploadFile')
             ->assertHasNoErrors();
 
         $attachment = $card->attachments()->firstOrFail();
@@ -98,7 +98,8 @@ describe('S3-compatible storage', function () {
         $card = Card::factory()->create(['column_id' => $column->id]);
         Storage::disk('s3')->put('attachments/photo.png', 'content');
         $attachment = Attachment::factory()->create([
-            'card_id' => $card->id,
+            'attachable_type' => Card::class,
+            'attachable_id' => $card->id,
             'user_id' => $user->id,
             'type' => Attachment::TYPE_IMAGE,
             'path' => 'attachments/photo.png',

@@ -4,11 +4,13 @@ namespace App\Models;
 
 use Database\Factories\CardFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 #[Fillable(['column_id', 'title', 'description', 'starts_at', 'ends_at', 'position', 'color'])]
 class Card extends Model
@@ -29,6 +31,28 @@ class Card extends Model
         return $this->belongsTo(Column::class);
     }
 
+    /**
+     * Cards ending today, scoped to the given user's own boards.
+     */
+    public function scopeDueToday(Builder $query, User $user): Builder
+    {
+        return $query
+            ->whereHas('column.board', fn (Builder $q) => $q->where('user_id', $user->id))
+            ->whereDate('ends_at', now()->toDateString());
+    }
+
+    /**
+     * Cards past their end date that haven't been resolved, scoped to the
+     * given user's own boards.
+     */
+    public function scopeOverdue(Builder $query, User $user): Builder
+    {
+        return $query
+            ->whereHas('column.board', fn (Builder $q) => $q->where('user_id', $user->id))
+            ->whereNotNull('ends_at')
+            ->whereDate('ends_at', '<', now()->toDateString());
+    }
+
     public function labels(): BelongsToMany
     {
         return $this->belongsToMany(Label::class, 'card_labels');
@@ -44,9 +68,9 @@ class Card extends Model
         return $this->hasMany(Comment::class)->latest();
     }
 
-    public function attachments(): HasMany
+    public function attachments(): MorphMany
     {
-        return $this->hasMany(Attachment::class)->latest();
+        return $this->morphMany(Attachment::class, 'attachable')->latest();
     }
 
     public function markdownNotes(): HasMany
