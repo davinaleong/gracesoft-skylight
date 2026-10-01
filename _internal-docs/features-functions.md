@@ -29,6 +29,7 @@ Roadmap features ship behind Laravel Pennant feature flags (see §2.15).
 - Two-factor authentication (TOTP): enable, confirm, disable, view and regenerate recovery codes; log in with a code or a recovery code
 - API tokens: create a named token (shown once) as **full API access** or **read-only bot**, list with last-used time, revoke (takes effect on the next request)
 - Email notification preferences: switch due-today and overdue reminders on or off (M0 flag)
+- Export my data (M0 flag): a zip with `skylight-export.json` (account, memberships, token names, full content of boards in owned workspaces including attachment metadata, and the user's own comments/notes elsewhere) and `cards.csv`. Over 500 cards, the export is queued and emailed as a signed link valid for 24 hours that only works for the signed-in owner; archives are pruned hourly once expired
 - New users get a personal workspace and a seeded demo board
 
 ### 2.2 Workspaces and Teams
@@ -152,6 +153,8 @@ Roadmap features ship behind Laravel Pennant feature flags (see §2.15).
 | GET | `/status` | Public, 30/min | System status |
 | GET | `/auth/{google\|github}/redirect`, `/auth/{provider}/callback` | Guest | OAuth sign-in |
 | GET | `/profile` | Logged in | Profile, security, avatar, API tokens |
+| POST | `/account/export` | Logged in, M0 flag, 3 per 10 min | Download or queue the account export |
+| GET | `/account/exports/{file}` | Logged in, signed URL, owner only | Download a queued export |
 | GET | `/home` | Verified | Board dashboard |
 | GET | `/boards/{board}` | Verified, workspace member | Board view |
 | GET | `/boards/{board}/export?format=csv` | Verified, workspace member | JSON (default) or CSV export |
@@ -185,8 +188,9 @@ Fortify provides login, registration, logout, password reset, password confirmat
 | `app:create-user` | Create a user (`--name`, `--email`, `--password`) |
 | `app:test-mail` | Send a sample notification (`--type`, `--to`) |
 | `app:send-card-due-reminders` | Send due-today and overdue reminders |
+| `app:prune-account-exports` | Delete queued export archives after their link expires |
 
-Scheduled: reminders 08:00; `backup:run` 01:00, `backup:clean` 01:30, `backup:monitor` 02:00.
+Scheduled: export pruning hourly; reminders 08:00; `backup:run` 01:00, `backup:clean` 01:30, `backup:monitor` 02:00.
 
 ## 5. Data Model
 
@@ -212,7 +216,7 @@ Scheduled: reminders 08:00; `backup:run` 01:00, `backup:clean` 01:30, `backup:mo
 
 - `Actions/Fortify`: `CreateNewUser::create`, `PasswordValidationRules::passwordRules`, `ResetUserPassword::reset`, `UpdateUserPassword::update`, `UpdateUserProfileInformation::update`, `updateVerifiedUser`
 - `Concerns/AuthorizesWorkspaceEditing`: `authorizeEdit`, `authorizeView`, `workspaceFor`
-- `Console/Commands`: `CreateUser::handle`, `askValid`; `SendCardDueReminders::handle`; `TestMail::handle`, `buildNotification`, `fakeCards`
+- `Console/Commands`: `CreateUser::handle`, `askValid`; `PruneAccountExports::handle`; `SendCardDueReminders::handle`; `TestMail::handle`, `buildNotification`, `fakeCards`
 - `Features/M0Foundations::resolve(?User $user): bool`
 
 ### 6.2 Controllers and Resources
@@ -223,13 +227,15 @@ Scheduled: reminders 08:00; `backup:run` 01:00, `backup:clean` 01:30, `backup:mo
 - `Api/V1/CardController`: `index`, `show`, `store`, `update`, `destroy`
 - `Api/V1/CommentController`: `index`, `store`, `destroy`
 - `Auth/SocialiteController`: `redirect`, `callback`, `findOrCreateUser`
+- `AccountExportController`: `store`, `download`
 - `BoardExportController::__invoke`, `csv`
 - `WorkspaceInviteController`: `show`, `accept`
 - `Resources`: `BoardResource`, `ColumnResource`, `CardResource`, `CommentResource`, `LabelResource` (`toArray`)
 
 ### 6.3 Jobs and Services
 
-- `Jobs/SendSlackMessage::handle`, `Jobs/SendWebhookRequest::handle`
+- `Jobs/ExportAccountData::handle`, `Jobs/SendSlackMessage::handle`, `Jobs/SendWebhookRequest::handle`
+- `AccountExporter`: `shouldQueue`, `toArray`, `cardRows`, `writeArchive`, `toCsv`, `boardToArray`, `attachmentsToArray`, `ownedWorkspaces`, `ownedCards`
 - `ActivityLogger`: `log`, `hashIp`, `diff`
 - `BoardExporter`: `toArray`, `toJson`, `toCsvRows`
 - `BoardTemplates`: `isValid`, `apply`
@@ -257,7 +263,7 @@ Scheduled: reminders 08:00; `backup:run` 01:00, `backup:clean` 01:30, `backup:mo
 
 ### 6.5 Notifications
 
-`Auth/NewIpLogin`, `Auth/PasswordChanged`, `Auth/RecoveryCodeUsed`, `Auth/SuspiciousLogin`, `Auth/Welcome`, `Board/ShareLinkCreated`, `Board/ShareLinkRevoked`, `Card/CardDue`, `Card/CommentMention`, `Workspace/WorkspaceInvitation` (each `via`, `toMail`, and `toArray` where shown in the bell)
+`Account/AccountExportReady` (`downloadUrl`), `Auth/NewIpLogin`, `Auth/PasswordChanged`, `Auth/RecoveryCodeUsed`, `Auth/SuspiciousLogin`, `Auth/Welcome`, `Board/ShareLinkCreated`, `Board/ShareLinkRevoked`, `Card/CardDue`, `Card/CommentMention`, `Workspace/WorkspaceInvitation` (each `via`, `toMail`, and `toArray` where shown in the bell)
 
 ### 6.6 Observers and Providers
 

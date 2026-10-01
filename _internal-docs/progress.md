@@ -138,3 +138,17 @@ Branch: `m0-foundations`. Spec: `competitive-edge-milestones.md` / `competitive-
 
 ### Notes
 - Within a single test, Laravel caches the resolved Sanctum user between requests; tests that switch or revoke tokens call `auth()->forgetGuards()` first. Production requests are unaffected.
+
+## 2026-10-01 — Competitive Edge M0 (4/6): Account data export
+
+### Work completed
+- [x] `App\Services\AccountExporter`: builds `skylight-export.json` + `cards.csv` in a zip
+- [x] Scope decision (please review): with workspaces in place, "everything the user owns" = their account details, workspace memberships, API token names/abilities (never token values), the **full content of boards in workspaces they own** (columns, cards, labels, checklists, comments, notes, attachment metadata), and their **own comments and notes on boards in other workspaces** without the surrounding board data. Uploaded files themselves are not bundled.
+- [x] `POST /account/export` (M0 flag, 3 per 10 minutes): ≤ 500 cards downloads immediately; above that, `ExportAccountData` is queued and `AccountExportReadyNotification` emails a 24-hour signed link
+- [x] `GET /account/exports/{file}` requires the signature **and** the signed-in owner (files live under `exports/{user_id}/` on the private `local` disk), so a forwarded link is useless to anyone else
+- [x] `app:prune-account-exports` (hourly) deletes archives older than the link lifetime
+- [x] "Your data" panel on the profile page; `EXPORT_QUEUE_THRESHOLD_CARDS` / `EXPORT_LINK_LIFETIME_HOURS` in `.env.example`
+- [x] Tests (`tests/Feature/M0/AccountExportTest.php`): export shape for a seeded user, no other user's data in JSON or CSV, CSV rows, immediate zip download, flag off → 404, queued path with signed link (owner OK, other user 404, unsigned 403, expired 403), pruning
+
+### Notes
+- Fixed a flaky assertion during this iteration: `ChecklistItemFactory` assigns a random `position`, and items are ordered by position, so test fixtures must pin positions.

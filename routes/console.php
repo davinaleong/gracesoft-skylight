@@ -11,6 +11,9 @@ Artisan::command('inspire', function () {
 // P2: send due-today and overdue card reminders every morning at 08:00
 Schedule::command('app:send-card-due-reminders')->dailyAt('08:00');
 
+// M0: delete queued account exports once their emailed link has expired
+Schedule::command('app:prune-account-exports')->hourly();
+
 // Milestone 8: nightly backup (database + storage/app + .env), then prune
 // per config/backup.php's retention strategy, then verify what's left is
 // actually healthy (age/size) -- three separate steps so a cleanup or

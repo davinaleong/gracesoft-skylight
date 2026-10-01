@@ -117,6 +117,30 @@
         {{-- Email notification preferences --}}
         @feature(\App\Features\M0Foundations::class)
             @livewire('profile.notification-preferences')
+
+            {{-- Your data --}}
+            <div class="rounded-xl bg-white dark:bg-gray-900 p-6 shadow-sm ring-1 ring-gray-200 dark:ring-gray-800">
+                <h3 class="mb-1 text-base font-semibold">Your data</h3>
+                <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+                    Download a zip with your account details, every board in workspaces you own (as JSON, plus a CSV of cards), and your comments and notes on other boards. Uploaded files aren't included; their names and types are.
+                </p>
+
+                @if (session('status') === 'account-export-queued')
+                    <div class="mb-4 rounded-lg bg-green-50 dark:bg-green-900/20 p-3 text-sm text-green-700 dark:text-green-400">
+                        Your export is being prepared. We'll email you a download link shortly.
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('account.export') }}">
+                    @csrf
+                    <button
+                        type="submit"
+                        class="rounded-lg bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium shadow-xs ring-1 ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                        Export my data
+                    </button>
+                </form>
+            </div>
         @endfeature
 
         {{-- API tokens --}}

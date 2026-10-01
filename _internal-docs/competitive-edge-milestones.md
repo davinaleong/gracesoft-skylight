@@ -37,7 +37,7 @@ Not on this roadmap for now: Gantt charts, a full automation builder, native mob
 - [x] **Bot API rate limiter:** a dedicated `bot` limiter (e.g. 60/min per token), with `429` responses including `Retry-After`
 - [x] **Tags decision:** either ship tags in the UI (filter boards by tag) or drop the model, pivots, and migrations
 - [x] **Remove** the unused `livewire/boards/create-board-form.blade.php` placeholder
-- [ ] **Data export:** download all of the user's data as JSON (boards → columns → cards → checklists, comments, notes, labels, attachment metadata) plus a CSV of cards; large exports are queued and emailed as a signed, expiring link
+- [x] **Data export:** download all of the user's data as JSON (boards → columns → cards → checklists, comments, notes, labels, attachment metadata) plus a CSV of cards; large exports are queued and emailed as a signed, expiring link
 - [ ] **Account deletion:** password + 2FA confirmation, a 7-day grace period with a cancel link, then hard deletion of the user's data and stored files
 - [ ] **PWA basics:** manifest, icons, and an installable shell (online-only for now)
 

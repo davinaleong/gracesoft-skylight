@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountExportController;
 use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\BoardExportController;
 use App\Http\Controllers\WorkspaceInviteController;
@@ -51,6 +52,14 @@ Route::middleware(['web', 'guest'])->prefix('auth')->group(function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', fn () => view('profile.index'))->name('profile');
+
+    Route::post('/account/export', [AccountExportController::class, 'store'])
+        ->middleware('throttle:3,10')
+        ->name('account.export');
+
+    Route::get('/account/exports/{file}', [AccountExportController::class, 'download'])
+        ->middleware('signed')
+        ->name('account.export.download');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
