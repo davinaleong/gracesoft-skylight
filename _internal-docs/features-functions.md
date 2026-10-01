@@ -1,498 +1,295 @@
-# GraceSoft Skylight: Features and Functions Inventory
+# GraceSoft Skylight: Features and Functions
 
-Last updated: 2026-08-14
+Last updated: 2026-10-01
 
-## 1. App Overview
+## 1. Overview
 
-GraceSoft Skylight is a Laravel + Livewire Kanban-style board application with:
+GraceSoft Skylight is a personal Kanban board application built on Laravel 13, Livewire 4 + Volt, Fortify, and Tailwind CSS 4. It provides:
 
-- Authentication and account security (including 2FA)
-- Board, column, and card management
-- Card details with checklists, comments, attachments, and markdown notes
-- Board sharing through revocable public read-only links
+- Account management with two-factor authentication
+- Boards, columns, and cards with drag-and-drop ordering
+- Rich card details: dates, colours, labels, checklists, comments, markdown notes, and attachments
+- Revocable, read-only public share links for boards
 - Global search across boards and cards
-- Event/activity logging and security notifications
-- Mail notification preview and reminder automation commands
+- Activity logging, security alert emails, and due-date reminder emails
+- A token-authenticated, read-only API for the GraceSoft Assistant Telegram bot
 
-## 2. User-Facing Feature List
+## 2. Features
 
 ### 2.1 Authentication and Account
 
-- User registration
-- Login with remember-me option
-- Password reset request and password reset flow
-- Password confirmation flow for protected actions
-- Two-factor challenge using authenticator code
-- Two-factor challenge using recovery code
-- Profile update (name and email)
-- Password update
-- Enable 2FA from profile
-- Confirm 2FA with TOTP code and setup key
-- Regenerate recovery codes
-- Disable 2FA
+- Register, log in (with "remember me"), and log out
+- Forgot password / reset password
+- Confirm password before sensitive actions
+- Profile page: update name and email, change password
+- Two-factor authentication (TOTP):
+    - Enable, confirm with a code (QR code and setup key shown), and disable
+    - View and regenerate recovery codes
+    - Log in with an authenticator code or a recovery code
 
-### 2.2 Boards and Kanban
+### 2.2 Boards
 
-- Home dashboard listing all owned boards
-- Create board (name and optional description)
-- Delete board
-- Open board detail page by board UUID slug
-- Create column
-- Delete column
-- Reorder columns via drag-and-drop
-- Create card inside a column
-- Delete card
-- Inline card edit in board view
-- Card color selection
-- Reorder cards within a column via drag-and-drop
-- Move cards across columns via drag-and-drop
-- Card labels shown on board cards
+- Home dashboard listing the user's own boards
+- Create a board (name required, description optional) and delete a board
+- Boards are addressed by UUID in URLs; internal IDs are never exposed
+- Only the board owner can open a board
 
-### 2.3 Labels
+### 2.3 Columns and Cards
 
-- Open board label manager
-- Create board-level label (name + color)
-- Delete label
-- Toggle label assignment on cards
+- Add and delete columns; reorder columns by drag-and-drop
+- Add and delete cards in a column
+- Reorder cards within a column and move cards between columns by drag-and-drop (SortableJS, via a drag handle so buttons and inputs stay clickable)
+- Inline card editing on the board: title, description (markdown), start date, due date, colour
+- Card colours: yellow, pink, blue, green (each with light and dark theme variants)
+- Labels shown on cards in the board view
 
-### 2.4 Card Detail Modal
+### 2.4 Labels
 
-- View full card detail in modal
-- Save start and due dates with date validation
-- Checklist management:
-    - Create checklist
-    - Delete checklist
-    - Create checklist item
-    - Toggle checklist item completion
-    - Delete checklist item
-    - Progress display per checklist
-- Comments:
-    - Add comment
-    - Delete own comment
-- Attachments:
-    - Upload image or PDF document attachments (restricted by MIME type; other formats rejected)
-    - Add URL link attachments
-    - Attachments can be associated with a card, a checklist, a comment, or a markdown note (polymorphic), each supporting multiple attachments
-    - Image thumbnails and PDF-icon thumbnails shown inline in the attachment list
-    - Click thumbnail to open a lightbox preview (image via `<img>`, PDF via inline browser viewer), with an "open in new tab" link
-    - Open attachments via short-lived (~5 min) temporary URL
-    - Delete own attachments (also removes the underlying file for image/document types)
-    - Graceful retry message (instead of a server error) if a file upload does not finish transferring
-- Markdown notes:
-    - Create note
-    - Edit own note
-    - Delete own note
+- Board-level labels with a name and a hex colour
+- Create and delete labels from the board's label manager
+- Toggle labels on and off for each card
 
-### 2.5 Search and Navigation
+### 2.5 Card Detail Modal
 
-- Global search in top navigation
-- Search boards by name
-- Search cards by title
-- Dropdown results for boards and cards
-- Direct navigation to selected board/card context
+- Full card view in a modal
+- Start and due dates (due date must be on or after start date)
+- **Checklists:** create and delete checklists; add, tick off, and delete items; progress shown per checklist
+- **Comments:** add comments (up to 2,000 characters); delete your own
+- **Markdown notes:** create, edit, and delete your own named notes
+- **Attachments:**
+    - Upload images (jpg, jpeg, png, gif, webp, svg, bmp) or PDFs, up to 10 MB
+    - Add URL links with an optional display name
+    - Attach to the card itself, or to a specific checklist, comment, or markdown note
+    - Thumbnails for images and a PDF icon for documents
+    - Lightbox preview (images inline, PDFs in the browser's viewer) with an "open in new tab" link
+    - Files are served through short-lived (~5 minute) temporary URLs
+    - Delete your own attachments; the stored file is removed too
+    - If an upload doesn't finish transferring, a retry message is shown instead of a server error
 
-### 2.6 Board Sharing and Public Viewer
+### 2.6 Search
 
-- Generate secure board share links
-- Optional share permissions:
-    - Can see comments
-    - Can see attachments flag persisted on link
-- One-time token display on generation
-- Copy share URL to clipboard
-- Revoke share links
-- Public read-only viewer route with token
-- Viewer route rate limit (30 requests/minute per IP)
-- Viewer responses include noindex, nofollow directives
-- Public viewer shows board columns/cards with card color accents
-- Card click opens a read-only detail dialog in shared view
-- Shared dialog includes markdown-rendered card body
-- Shared dialog includes read-only start/due dates
-- Shared dialog includes read-only checklists (accordion)
-- Shared dialog includes read-only comments when enabled on share link
-- Shared dialog includes read-only attachments when enabled on share link
-- Shared dialog includes image lightbox for attachment previews
+- Search box in the top navigation (starts after 2 characters)
+- Matches board names (up to 5 results) and card titles (up to 8 results)
+- Only searches the user's own boards
+- Results open the matching board or card
 
-### 2.7 Security, Logging, and Notifications
+### 2.7 Board Sharing (Public Read-Only Links)
 
-- Board and card lifecycle activity logs
-- Card move event logs
-- Login success/failure logs
-- 2FA challenge/enabled/failed logs
-- Share-link created/revoked/accessed logs
-- IP hash storage for privacy-preserving activity/access logs
-- Notify user on first login from new IP
-- Notify user on suspicious login failures (every 5 failures in 10-minute window)
-- Notify user on password reset
-- Notify user on recovery code usage detection
-- Notify user on registration welcome
-- Notify user when share link is created/revoked
-- Due-today and overdue card reminder notifications
+- Generate share links for a board, with optional permissions:
+    - Show comments
+    - Show attachments
+- The link is shown once at creation and can be copied to the clipboard; only a SHA-256 hash of the token is stored
+- Revoke share links at any time
+- Public viewer at `/view/{token}`:
+    - Shows columns and cards with colour accents
+    - Clicking a card opens a read-only dialog with the markdown description, dates, checklists (accordion), and—if permitted—comments and attachments with an image lightbox
+    - Limited to 30 requests per minute per IP
+    - Sends `X-Robots-Tag: noindex, nofollow` so search engines don't index it
+    - Each visit is recorded (hashed IP and user agent)
 
-### 2.8 Theme and UX
+### 2.8 Email Notifications
 
-- Light/dark theme toggle in app layout
-- Theme preference persisted in local storage
-- Kanban drag-and-drop implemented with SortableJS
+| Notification | Trigger |
+| --- | --- |
+| Welcome | Account registered |
+| Password changed | Password reset completed |
+| New IP login | First successful login from an IP address not seen before |
+| Suspicious login | Every 5th failed login within 10 minutes |
+| Recovery code used | A 2FA recovery code is consumed |
+| Share link created | User creates a share link |
+| Share link revoked | User revokes a share link |
+| Card due today | Daily reminder for cards ending today |
+| Card overdue | Daily reminder for cards past their due date |
 
-## 3. HTTP Route Surface
+Due-today and overdue reminders respect per-user preferences (`due_today`, `overdue`), which default to on.
 
-Web routes:
+### 2.9 Activity Logging
 
-- GET /
-    - Redirects to home when authenticated, otherwise login
-- GET /home (auth)
-    - Home dashboard
-- GET /profile (auth)
-    - Profile settings and security settings
-- GET /boards/{board} (auth, owner-only authorization)
-    - Board detail page
-- GET /view/{token} (throttle:viewer)
-    - Public read-only board viewer from active share token
+Events are recorded in the activity log, with IP addresses stored only as hashes:
 
-Fortify-auth routes are enabled for:
+- `board.created`, `board.updated`, `board.deleted`
+- `card.created`, `card.updated`, `card.moved`, `card.deleted`
+- `login.success`, `login.failed`
+- `2fa.challenged`, `2fa.enabled`, `2fa.failed`
+- `share_link.created`, `share_link.revoked`, `share_link.accessed`
 
-- Login, register, logout
-- Password reset flows
-- Password confirmation
-- Two-factor challenge and 2FA management endpoints
+### 2.10 Internal Bot API (GraceSoft Assistant)
+
+- Read-only JSON endpoints for the GraceSoft Assistant Telegram bot
+- Authenticated with Sanctum personal access tokens (bearer token)
+- Returns only the token owner's data
+- Bot tokens cannot be used to access the website's logged-in pages
+
+### 2.11 Interface
+
+- Light/dark theme toggle, remembered in the browser (local storage)
+- Branded HTML email templates with dark styling
+
+### 2.12 Rate Limits
+
+| Area | Limit |
+| --- | --- |
+| Login | 5 attempts/minute per email + IP |
+| Two-factor challenge | 5 attempts/minute per login session |
+| Public board viewer | 30 requests/minute per IP |
+
+## 3. Routes
+
+### 3.1 Web
+
+| Method | Path | Access | Purpose |
+| --- | --- | --- | --- |
+| GET | `/` | Public | Redirects to `/home` if logged in, otherwise to login |
+| GET | `/home` | Logged in | Board dashboard |
+| GET | `/profile` | Logged in | Profile and security settings |
+| GET | `/boards/{board}` | Logged in, board owner | Board view |
+| GET | `/view/{token}` | Public, rate-limited | Read-only shared board |
+
+Fortify also provides routes for login, registration, logout, password reset, password confirmation, the two-factor challenge, and two-factor management.
+
+### 3.2 API (`/api`, Sanctum token required)
+
+| Method | Path | Response |
+| --- | --- | --- |
+| GET | `/api/user` | The token owner (Laravel default route) |
+| GET | `/api/bot/cards/due` | `{ date, due_today: [...], overdue: [...] }`. Each card has `title`, `board`, `column`, and `ends_at` |
+| GET | `/api/bot/boards/summary` | `{ boards: [{ board, columns: [{ column, card_count }] }] }` |
 
 ## 4. Console Commands and Scheduler
 
-Custom Artisan commands:
+| Command | Description | Options |
+| --- | --- | --- |
+| `app:create-user` | Create a user account (interactive prompts with validation) | `--name`, `--email`, `--password` |
+| `app:test-mail` | Send a sample notification email to preview the template | `--type` (`welcome`, `password-changed`, `new-ip-login`, `suspicious-login`, `recovery-code-used`, `share-link-created`, `share-link-revoked`, `card-due-today`, `card-overdue`), `--to` (defaults to the first user) |
+| `app:send-card-due-reminders` | Email due-today and overdue reminders to each user | — |
 
-- app:create-user
-    - Interactive or option-based user creation
-    - Options: --name, --email, --password
-- app:test-mail
-    - Sends selected notification template to a user email
-    - Options: --type, --to
-- app:send-card-due-reminders
-    - Sends due-today and overdue reminder notifications
+Scheduled task: `app:send-card-due-reminders` runs daily at 08:00.
 
-Scheduler:
+## 5. Data Model
 
-- app:send-card-due-reminders runs daily at 08:00
+| Entity | Purpose | Key relationships |
+| --- | --- | --- |
+| User | Account; 2FA; notification preferences; API tokens | has many Boards, Tags |
+| Board | A Kanban board (UUID route key) | belongs to User; has many Columns, Labels, ShareLinks; many-to-many Tags |
+| Column | A list on a board, ordered by `position` | belongs to Board; has many Cards; many-to-many Tags |
+| Card | A task with dates, colour, and description | belongs to Column; many-to-many Labels; has many Checklists, Comments, MarkdownNotes; has many Attachments (polymorphic) |
+| Label | Board-level coloured label | belongs to Board; many-to-many Cards |
+| Checklist / ChecklistItem | Checklists and their items | Checklist belongs to Card and has Attachments |
+| Comment | User comment on a card | belongs to Card, User; has Attachments |
+| MarkdownNote | Named markdown note on a card | belongs to Card, User; has Attachments |
+| Attachment | Image, PDF document, or link | polymorphic `attachable` (Card, Checklist, Comment, MarkdownNote); belongs to User |
+| BoardShareLink | Public share token (hashed) and permissions | belongs to Board; has many ShareLinkAccesses |
+| ShareLinkAccess | A recorded visit to a share link | belongs to BoardShareLink |
+| ActivityLog | Audit event | belongs to User; polymorphic `subject` |
+| Tag | User-level tag | belongs to User; many-to-many Boards, Columns |
+| PersonalAccessToken | Sanctum API token | belongs to User |
 
-## 5. Data/Domain Capability Map
+## 6. Function Reference
 
-Primary entities:
+### 6.1 Fortify Actions (`app/Actions/Fortify`)
 
-- User
-- Board
-- Column
-- Card
-- Label
-- Checklist
-- ChecklistItem
-- Comment
-- Attachment
-- MarkdownNote
-- Tag
-- BoardShareLink
-- ShareLinkAccess
-- ActivityLog
+- `CreateNewUser::create(array $input): User`
+- `PasswordValidationRules::passwordRules(): array`
+- `ResetUserPassword::reset(User $user, array $input): void`
+- `UpdateUserPassword::update(User $user, array $input): void`
+- `UpdateUserProfileInformation::update(User $user, array $input): void`
+- `UpdateUserProfileInformation::updateVerifiedUser(User $user, array $input): void`
 
-Notable domain capabilities:
+### 6.2 Console Commands (`app/Console/Commands`)
 
-- Board route key is UUID slug
-- Board share link token stored as hash, not plaintext
-- Attachments support image, PDF document, and external link types
-- Attachment is polymorphic (attachable_type/attachable_id): can belong to Card, Checklist, Comment, or MarkdownNote
-- Temporary URLs generated for image/document attachments where supported
-- User notification preferences support due_today and overdue toggles
+- `CreateUser::handle(): int`
+- `CreateUser::askValid(string $label, Closure $makeValidator): string` (private)
+- `SendCardDueReminders::handle(): int`
+- `TestMail::handle(): int`
+- `TestMail::buildNotification(string $type, User $user): Notification` (private)
+- `TestMail::fakeCards(User $user, int $daysAgo = 0): Collection` (private)
 
-## 6. Full Function Inventory by File
+### 6.3 API Controllers (`app/Http/Controllers/Api/Bot`)
 
-This section lists all currently implemented project functions and methods in app code and Volt component classes.
+- `BoardsController::summary(Request $request): JsonResponse`
+- `CardsController::due(Request $request): JsonResponse`
+- `CardsController::formatCard(Card $card): array` (private)
 
-### 6.1 app/Actions/Fortify/CreateNewUser.php
+### 6.4 Models (`app/Models`)
 
-- create(array $input): User
+**ActivityLog:** `user()`, `subject()`, `casts()`
 
-### 6.2 app/Actions/Fortify/PasswordValidationRules.php
+**Attachment:** `attachable()`, `user()`, `isImage()`, `isDocument()`, `isPdf()`, `isLink()`, `temporaryUrl(int $expiryMinutes = 5): string`, `casts()`
 
-- passwordRules(): array
+**Board:** `booted()` (auto-generates UUID), `getRouteKeyName()`, `user()`, `columns()`, `tags()`, `labels()`, `shareLinks()`, `casts()`
 
-### 6.3 app/Actions/Fortify/ResetUserPassword.php
+**BoardShareLink:** `board()`, `accesses()`, `isRevoked()`, `isActive()`, `generateToken(): array{token, hash}`, `findByToken(string $token): ?self`, `casts()`
 
-- reset(User $user, array $input): void
+**Card:** `column()`, `scopeDueToday(Builder $query, User $user)`, `scopeOverdue(Builder $query, User $user)`, `labels()`, `checklists()`, `comments()`, `attachments()`, `markdownNotes()`, `casts()`; constant `COLORS`
 
-### 6.4 app/Actions/Fortify/UpdateUserPassword.php
+**Checklist:** `card()`, `items()`, `attachments()`
 
-- update(User $user, array $input): void
+**ChecklistItem:** `checklist()`, `casts()`
 
-### 6.5 app/Actions/Fortify/UpdateUserProfileInformation.php
+**Column:** `board()`, `cards()`, `tags()`, `casts()`
 
-- update(User $user, array $input): void
-- updateVerifiedUser(User $user, array $input): void
+**Comment:** `card()`, `user()`, `attachments()`
 
-### 6.6 app/Console/Commands/CreateUser.php
+**Label:** `board()`, `cards()`
 
-- handle(): int
-- askValid(string $label, Closure $makeValidator): string
+**MarkdownNote:** `card()`, `user()`, `attachments()`
 
-### 6.7 app/Console/Commands/SendCardDueReminders.php
+**ShareLinkAccess:** `shareLink()`, `casts()`
 
-- handle(): int
+**Tag:** `user()`, `boards()`, `columns()`
 
-### 6.8 app/Console/Commands/TestMail.php
+**User:** `boards()`, `tags()`, `casts()`, `wantsNotification(string $key): bool`
 
-- handle(): int
-- buildNotification(string $type, User $user): Notification
-- fakeCards(User $user, int $daysAgo = 0): Collection
+### 6.5 Notifications (`app/Notifications`)
 
-### 6.9 app/Models/ActivityLog.php
+Each notification implements `via(object $notifiable): array` and `toMail(object $notifiable): MailMessage`.
 
-- user(): BelongsTo
-- subject(): MorphTo
-- casts(): array
+- `Auth/NewIpLoginNotification`
+- `Auth/PasswordChangedNotification`
+- `Auth/RecoveryCodeUsedNotification`
+- `Auth/SuspiciousLoginNotification` (constructor takes failure count)
+- `Auth/WelcomeNotification`
+- `Board/ShareLinkCreatedNotification` (constructor takes board, raw token, and comment/attachment permissions)
+- `Board/ShareLinkRevokedNotification` (constructor takes board)
+- `Card/CardDueNotification` (constructor takes cards and type: due today / overdue)
 
-### 6.10 app/Models/Attachment.php
+### 6.6 Observers, Services, and Providers
 
-- attachable(): MorphTo
-- user(): BelongsTo
-- isImage(): bool
-- isDocument(): bool
-- isPdf(): bool
-- isLink(): bool
-- temporaryUrl(int $expiryMinutes = 5): string
-- casts(): array
+- `BoardObserver`: `created()`, `updated()`, `deleted()`, which log board events
+- `CardObserver`: `created()`, `updated()` (logs `card.moved` when the column changes, and `card.updated` when other fields change; position-only changes aren't logged), `deleted()`
+- `ActivityLogger::log(string $event, ?Model $subject = null, ?array $properties = null, ?int $userId = null): void`
+- `ActivityLogger::hashIp(?string $ip): ?string`
+- `ActivityLogger::diff(array $dirty, array $original): array`
+- `AppServiceProvider::boot()`: registers observers, the `viewer` rate limiter, auth event listeners for logging and security notifications
+- `FortifyServiceProvider::boot()`: Fortify actions, auth views, `login` and `two-factor` rate limiters
+- `VoltServiceProvider::boot()`: mounts Volt component paths
 
-### 6.11 app/Models/Board.php
+### 6.7 Livewire Volt Components (`resources/views/livewire`)
 
-- booted(): void
-- getRouteKeyName(): string
-- user(): BelongsTo
-- columns(): HasMany
-- tags(): BelongsToMany
-- labels(): HasMany
-- shareLinks(): HasMany
-- casts(): array
+**boards/index:** `boards()`, `create()`, `delete(int $boardId)`
 
-### 6.12 app/Models/BoardShareLink.php
+**boards/show:** `mount(Board $board)`, `createColumn()`, `deleteColumn(int $columnId)`, `createCard(int $columnId)`, `deleteCard(int $cardId)`, `startEditCard(int $cardId)`, `saveCard()`, `updateColumnOrder(array $orderedIds)`, `updateCardOrder(int $columnId, array $orderedIds)`, `moveCard(int $cardId, int $toColumnId, int $position)`, `createLabel()`, `deleteLabel(int $labelId)`, `toggleCardLabel(int $cardId, int $labelId)`
 
-- board(): BelongsTo
-- accesses(): HasMany
-- isRevoked(): bool
-- isActive(): bool
-- generateToken(): array
-- findByToken(string $token): ?self
-- casts(): array
+**boards/share-links:** `mount(Board $board)`, `shareLinks()`, `generate()`, `revoke(int $linkId)`
 
-### 6.13 app/Models/Card.php
+**cards/detail:**
 
-- column(): BelongsTo
-- labels(): BelongsToMany
-- checklists(): HasMany
-- comments(): HasMany
-- attachments(): MorphMany
-- markdownNotes(): HasMany
-- casts(): array
+- Dates: `mount(Card $card)`, `saveDates()`
+- Checklists: `checklists()`, `createChecklist()`, `deleteChecklist(int $checklistId)`, `createItem(int $checklistId)`, `toggleItem(int $itemId)`, `deleteItem(int $itemId)`
+- Comments: `comments()`, `addComment()`, `deleteComment(int $commentId)`
+- Card attachments: `attachments()`, `uploadFile()`, `addLink()`, `deleteAttachment(int $attachmentId)`
+- Item attachments (checklist/comment/note): `openAttachmentForm(string $type, int $id)`, `closeAttachmentForm()`, `uploadItemFile()`, `addItemLink()`, `deleteItemAttachment(int $attachmentId)`
+- Private helpers: `resolveAttachTarget(string $type, int $id)`, `fileUploadRules(): array`, `resolveAttachmentType(string $mimeType): string`
+- Notes: `markdownNotes()`, `saveNote()`, `editNote(int $noteId)`, `deleteNote(int $noteId)`
 
-### 6.14 app/Models/Checklist.php
+**search/global:** `results()`
 
-- card(): BelongsTo
-- items(): HasMany
-- attachments(): MorphMany
+## 7. Known Gaps
 
-### 6.15 app/Models/ChecklistItem.php
-
-- checklist(): BelongsTo
-- casts(): array
-
-### 6.16 app/Models/Column.php
-
-- board(): BelongsTo
-- cards(): HasMany
-- tags(): BelongsToMany
-- casts(): array
-
-### 6.17 app/Models/Comment.php
-
-- card(): BelongsTo
-- user(): BelongsTo
-- attachments(): MorphMany
-
-### 6.18 app/Models/Label.php
-
-- board(): BelongsTo
-- cards(): BelongsToMany
-
-### 6.19 app/Models/MarkdownNote.php
-
-- card(): BelongsTo
-- user(): BelongsTo
-- attachments(): MorphMany
-
-### 6.20 app/Models/ShareLinkAccess.php
-
-- shareLink(): BelongsTo
-- casts(): array
-
-### 6.21 app/Models/Tag.php
-
-- user(): BelongsTo
-- boards(): BelongsToMany
-- columns(): BelongsToMany
-
-### 6.22 app/Models/User.php
-
-- boards(): HasMany
-- tags(): HasMany
-- casts(): array
-- wantsNotification(string $key): bool
-
-### 6.23 app/Notifications/Auth/NewIpLoginNotification.php
-
-- via(object $notifiable): array
-- toMail(object $notifiable): MailMessage
-
-### 6.24 app/Notifications/Auth/PasswordChangedNotification.php
-
-- via(object $notifiable): array
-- toMail(object $notifiable): MailMessage
-
-### 6.25 app/Notifications/Auth/RecoveryCodeUsedNotification.php
-
-- via(object $notifiable): array
-- toMail(object $notifiable): MailMessage
-
-### 6.26 app/Notifications/Auth/SuspiciousLoginNotification.php
-
-- \_\_construct(...)
-- via(object $notifiable): array
-- toMail(object $notifiable): MailMessage
-
-### 6.27 app/Notifications/Auth/WelcomeNotification.php
-
-- via(object $notifiable): array
-- toMail(object $notifiable): MailMessage
-
-### 6.28 app/Notifications/Board/ShareLinkCreatedNotification.php
-
-- \_\_construct(...)
-- via(object $notifiable): array
-- toMail(object $notifiable): MailMessage
-
-### 6.29 app/Notifications/Board/ShareLinkRevokedNotification.php
-
-- \_\_construct(...)
-- via(object $notifiable): array
-- toMail(object $notifiable): MailMessage
-
-### 6.30 app/Notifications/Card/CardDueNotification.php
-
-- \_\_construct(...)
-- via(object $notifiable): array
-- toMail(object $notifiable): MailMessage
-
-### 6.31 app/Observers/BoardObserver.php
-
-- created(Board $board): void
-- updated(Board $board): void
-- deleted(Board $board): void
-
-### 6.32 app/Observers/CardObserver.php
-
-- created(Card $card): void
-- updated(Card $card): void
-- deleted(Card $card): void
-
-### 6.33 app/Providers/AppServiceProvider.php
-
-- register(): void
-- boot(): void
-
-### 6.34 app/Providers/FortifyServiceProvider.php
-
-- register(): void
-- boot(): void
-
-### 6.35 app/Providers/VoltServiceProvider.php
-
-- register(): void
-- boot(): void
-
-### 6.36 app/Services/ActivityLogger.php
-
-- log(string $event, ?Model $subject = null, ?array $properties = null, ?int $userId = null): void
-- hashIp(?string $ip): ?string
-- diff(array $dirty, array $original): array
-
-### 6.37 resources/views/livewire/boards/index.blade.php (Volt component class)
-
-- boards()
-- create(): void
-- delete(int $boardId): void
-
-### 6.38 resources/views/livewire/boards/show.blade.php (Volt component class)
-
-- mount(Board $board): void
-- createColumn(): void
-- deleteColumn(int $columnId): void
-- createCard(int $columnId): void
-- deleteCard(int $cardId): void
-- startEditCard(int $cardId): void
-- saveCard(): void
-- updateColumnOrder(array $orderedIds): void
-- updateCardOrder(int $columnId, array $orderedIds): void
-- moveCard(int $cardId, int $toColumnId, int $position): void
-- createLabel(): void
-- deleteLabel(int $labelId): void
-- toggleCardLabel(int $cardId, int $labelId): void
-
-### 6.39 resources/views/livewire/boards/share-links.blade.php (Volt component class)
-
-- mount(Board $board): void
-- shareLinks()
-- generate(): void
-- revoke(int $linkId): void
-
-### 6.40 resources/views/livewire/cards/detail.blade.php (Volt component class)
-
-- mount(Card $card): void
-- checklists()
-- saveDates(): void
-- createChecklist(): void
-- deleteChecklist(int $checklistId): void
-- createItem(int $checklistId): void
-- toggleItem(int $itemId): void
-- deleteItem(int $itemId): void
-- comments()
-- addComment(): void
-- deleteComment(int $commentId): void
-- attachments()
-- markdownNotes()
-- uploadFile(): void — uploads image or PDF as a card-level attachment; catches FilesystemException from an incomplete temp upload and shows a retryable error instead of a 500
-- addLink(): void
-- deleteAttachment(int $attachmentId): void
-- openAttachmentForm(string $type, int $id): void — opens the item-level attachment form for a checklist/comment/note (only one open at a time)
-- closeAttachmentForm(): void
-- uploadItemFile(): void — uploads image or PDF as a checklist/comment/note-level attachment for whichever target is currently open; same FilesystemException handling as uploadFile()
-- addItemLink(): void — adds a link attachment to the currently open item-level target
-- deleteItemAttachment(int $attachmentId): void — scoped to checklist/comment/note attachments belonging to the current card
-- resolveAttachTarget(string $type, int $id): Checklist|Comment|MarkdownNote (private) — authorizes the item-level attachment target against the current card
-- fileUploadRules(): array (private) — shared validation rules (image or PDF, max 10MB) for both uploadFile() and uploadItemFile()
-- resolveAttachmentType($file): string (private) — derives TYPE_IMAGE vs TYPE_DOCUMENT from the uploaded file's actual MIME type
-- saveNote(): void
-- editNote(int $noteId): void
-- deleteNote(int $noteId): void
-
-### 6.41 resources/views/livewire/search/global.blade.php (Volt component class)
-
-- results()
-
-## 7. Known Notes and Gaps
-
-- resources/views/livewire/boards/create-board-form.blade.php currently appears to be a placeholder and not an active feature surface.
-- The public share-link viewer (resources/views/viewer/board.blade.php) only reads card-level attachments; it does not yet surface checklist/comment/note-level attachments added via the new polymorphic association (2026-08-14).
-- resources/views/livewire/cards/partials/attachment-row.blade.php and attachment-form.blade.php (added 2026-08-14) are shared partials reused across the card, checklist, comment, and note attachment sections in cards/detail.blade.php — update all four call sites if the row/form markup changes.
-
-## 8. Suggested Maintenance Process
-
-When features are added or changed, update this document by:
-
-- Updating section 2 for user-facing capability changes
-- Updating section 3 when route surface changes
-- Updating section 4 for command/schedule changes
-- Updating section 6 whenever new methods are introduced or removed
+- **Notification preferences:** `due_today` / `overdue` preferences exist on the user, but there's no screen to change them.
+- **Tags:** the Tag model and its pivot tables exist, but tags aren't used anywhere in the interface.
+- **Bot tokens:** there's no screen or command for issuing bot API tokens, so they have to be created manually (e.g. `$user->createToken(...)`).
+- **Bot API rate limiting:** the bot API endpoints have no dedicated rate limiter.
+- **Shared viewer attachments:** the public viewer only shows card-level attachments, not those on checklists, comments, or notes.
+- **Placeholder component:** `livewire/boards/create-board-form.blade.php` is a placeholder and isn't used.
+- **Shared attachment partials:** `cards/partials/attachment-row` and `attachment-form` are used in four places in `cards/detail`. Any markup change has to work in all four.
