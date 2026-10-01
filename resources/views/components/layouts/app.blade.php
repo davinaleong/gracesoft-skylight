@@ -9,6 +9,12 @@
 
     <link rel="icon" href="{{ asset('logo.svg') }}" type="image/xml+svg" >
 
+    @feature(\App\Features\M0Foundations::class)
+        <link rel="manifest" href="{{ route('pwa.manifest') }}">
+        <meta name="theme-color" content="#372aac">
+        <link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
+    @endfeature
+
     {{-- Apply dark class before first paint to avoid flash --}}
     <script>
         (function () {

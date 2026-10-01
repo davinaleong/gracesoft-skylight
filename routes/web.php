@@ -38,6 +38,24 @@ Route::middleware(['throttle:status'])->get('/status', function (SystemStatusSer
 
 Route::get('/security', fn () => view('security'))->name('security');
 
+// PWA manifest (M0). Online-only for now: no service worker or offline cache.
+Route::get('/manifest.webmanifest', fn () => response()->json([
+    'name' => config('app.name'),
+    'short_name' => config('app.name'),
+    'description' => 'The secure way to run client work.',
+    'id' => '/home',
+    'start_url' => '/home',
+    'scope' => '/',
+    'display' => 'standalone',
+    'background_color' => '#ffffff',
+    'theme_color' => '#372aac',
+    'icons' => [
+        ['src' => asset('icons/icon-192.png'), 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
+        ['src' => asset('icons/icon-512.png'), 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'],
+        ['src' => asset('icons/icon-maskable-512.png'), 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable'],
+    ],
+], 200, ['Content-Type' => 'application/manifest+json'], JSON_UNESCAPED_SLASHES))->name('pwa.manifest');
+
 Route::get('/privacy', fn () => view('privacy'))->name('privacy');
 
 Route::get('/terms', fn () => view('terms'))->name('terms');

@@ -168,3 +168,18 @@ Branch: `m0-foundations`. Spec: `competitive-edge-milestones.md` / `competitive-
 
 ### Notes
 - Found while checking billing for the blockers: Cashier is on `Workspace` but `subscriptions` has `user_id`, while Cashier queries `workspace_id`, so subscription lookups would fail. Out of M0 scope; flagged as a separate task.
+
+## 2026-10-01 — Competitive Edge M0 (6/6): PWA basics
+
+### Work completed
+- [x] Icons generated from `public/logo-w.png` on brand indigo `#372aac` with GD: `public/icons/icon-192.png`, `icon-512.png`, `icon-maskable-512.png` (logo inside the 80% safe zone), `apple-touch-icon.png` (180)
+- [x] `GET /manifest.webmanifest` (`pwa.manifest`), served by the app so it uses `APP_NAME` and is testable: standalone, `start_url` `/home`, theme and background colours, icons
+- [x] App layout links the manifest, `theme-color`, and Apple touch icon behind `@feature(M0Foundations)`
+- [x] Online-only by design: no service worker (current Chrome/Edge install criteria don't need one; a no-op fetch handler would only add risk). Offline support is a later milestone.
+- [x] Tests (`tests/Feature/M0/PwaManifestTest.php`): manifest content type and required fields, every icon is a real PNG of its declared size, layout links it only with the flag on
+
+### M0 status
+All eight M0 scope items are done on `m0-foundations`. Not yet done:
+- Manual QA (light/dark, phone width, keyboard) of the new profile panels and the install prompt. Local MySQL wasn't running, so this wasn't checked in the browser.
+- Run the three new migrations (`create_features_table`, `drop_tags_tables`, `add_deletion_scheduled_at_to_users_table`) on each environment, then turn on `FEATURE_EARLY_ACCESS_EMAILS` for your own account.
+- The spec's CI gate (Larastan, PostgreSQL in CI, clean `composer audit`) isn't set up in this repo yet.

@@ -78,6 +78,7 @@ Roadmap features ship behind Laravel Pennant feature flags (see §2.15).
 - Keyboard shortcuts: `/` search, `c` create, `?` help overlay
 - Onboarding checklist widget: create a board, invite a teammate, add a profile photo
 - Light/dark theme toggle
+- Installable web app (M0 flag): manifest at `/manifest.webmanifest` (standalone, starts at `/home`), 192/512 and maskable icons, Apple touch icon, theme colour; online-only (no service worker)
 
 ### 2.8 Client Portals (Share Links)
 
@@ -152,6 +153,7 @@ Roadmap features ship behind Laravel Pennant feature flags (see §2.15).
 | GET | `/` | Public | Landing page (redirects to `/home` when logged in) |
 | GET | `/pricing`, `/changelog`, `/feedback`, `/security`, `/privacy`, `/terms` | Public | Marketing and legal pages |
 | GET | `/status` | Public, 30/min | System status |
+| GET | `/manifest.webmanifest` | Public | PWA manifest |
 | GET | `/auth/{google\|github}/redirect`, `/auth/{provider}/callback` | Guest | OAuth sign-in |
 | GET | `/profile` | Logged in | Profile, security, avatar, API tokens |
 | POST | `/account/export` | Logged in, M0 flag, 3 per 10 min | Download or queue the account export |

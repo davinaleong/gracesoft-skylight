@@ -39,7 +39,7 @@ Not on this roadmap for now: Gantt charts, a full automation builder, native mob
 - [x] **Remove** the unused `livewire/boards/create-board-form.blade.php` placeholder
 - [x] **Data export:** download all of the user's data as JSON (boards → columns → cards → checklists, comments, notes, labels, attachment metadata) plus a CSV of cards; large exports are queued and emailed as a signed, expiring link
 - [x] **Account deletion:** password + 2FA confirmation, a 7-day grace period with a cancel link, then hard deletion of the user's data and stored files
-- [ ] **PWA basics:** manifest, icons, and an installable shell (online-only for now)
+- [x] **PWA basics:** manifest, icons, and an installable shell (online-only for now)
 
 ### Data model
 
