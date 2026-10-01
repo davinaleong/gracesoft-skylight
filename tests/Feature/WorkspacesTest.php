@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Board;
-use App\Models\Tag;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -103,14 +102,6 @@ describe('workspace scoping on boards and tags', function () {
         ]);
 
         expect($board->workspace_id)->toBe($otherWorkspace->id);
-    });
-
-    it('auto-assigns a new tag to its creator personal workspace', function () {
-        $user = User::factory()->create();
-
-        $tag = Tag::factory()->create(['user_id' => $user->id]);
-
-        expect($tag->workspace_id)->toBe($user->workspaces->firstOrFail()->id);
     });
 });
 

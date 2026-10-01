@@ -4,7 +4,6 @@ use App\Models\Board;
 use App\Models\Card;
 use App\Models\Column;
 use App\Models\Label;
-use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Volt\Volt;
@@ -85,43 +84,5 @@ describe('card labels', function () {
             ->assertHasNoErrors();
 
         expect($card->fresh()->labels->contains($label))->toBeFalse();
-    });
-});
-
-describe('tags', function () {
-    it('can create a tag for a user', function () {
-        $user = User::factory()->create();
-
-        $tag = $user->tags()->create(['name' => 'urgent', 'color' => '#ef4444']);
-
-        $this->assertDatabaseHas('tags', [
-            'user_id' => $user->id,
-            'name' => 'urgent',
-        ]);
-
-        expect($user->tags)->toHaveCount(1);
-        expect($tag->name)->toBe('urgent');
-    });
-
-    it('can attach a tag to a board', function () {
-        $user = User::factory()->create();
-        $board = Board::factory()->create(['user_id' => $user->id]);
-        $tag = Tag::factory()->create(['user_id' => $user->id]);
-
-        $board->tags()->attach($tag);
-
-        expect($board->fresh()->tags)->toHaveCount(1);
-        expect($board->tags->first()->id)->toBe($tag->id);
-    });
-
-    it('can attach a tag to a column', function () {
-        $user = User::factory()->create();
-        $board = Board::factory()->create(['user_id' => $user->id]);
-        $column = Column::factory()->create(['board_id' => $board->id]);
-        $tag = Tag::factory()->create(['user_id' => $user->id]);
-
-        $column->tags()->attach($tag);
-
-        expect($column->fresh()->tags)->toHaveCount(1);
     });
 });

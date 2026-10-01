@@ -135,11 +135,6 @@ class Workspace extends Model
         return $this->hasMany(Board::class);
     }
 
-    public function tags(): HasMany
-    {
-        return $this->hasMany(Tag::class);
-    }
-
     public function invites(): HasMany
     {
         return $this->hasMany(WorkspaceInvite::class);

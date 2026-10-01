@@ -95,3 +95,25 @@ Fix a broken "Unable to attach any media" bug end-to-end (composer dependency �
 - **Known gap, not yet fixed:** Livewire's `cleanupOldUploads()` early-returns when `FileUploadConfiguration::isUsingS3()` is true — i.e. automatic cleanup of abandoned `livewire-tmp/` files is silently disabled on S3. Nothing currently expires them; recommend an S3 Lifecycle rule to auto-delete objects under `livewire-tmp/` after ~1 day. Not applied yet — needs sign-off before touching bucket config again.
 - The public share-link viewer (`resources/views/viewer/board.blade.php`) still only reads card-level attachments — checklist/comment/note attachments from this session are not yet surfaced there. Tracked in `features-functions.md` §7.
 - `.env` contains live AWS credentials and is committed in this working tree — flagged to the user as worth double-checking is git-ignored.
+
+---
+
+## 2026-10-01 — Competitive Edge M0 (1/6): Feature flags, drop tags, remove placeholder
+
+Branch: `m0-foundations`. Spec: `competitive-edge-milestones.md` / `competitive-edge-tests.md`.
+
+### Context
+- The spec was drafted from a features inventory that predated the merge of origin's Milestones 1–9 (workspaces, billing, REST API, client portals, etc.). Regenerated `features-functions.md` against the actual code before starting. Several later roadmap milestones (M1 roles, M4 portal expiry/analytics, M5 billing, M7 templates/filters) overlap with existing work and need re-scoping before they start.
+- `vendor/` was out of sync with `composer.lock` after the merge (missing Sentry); ran `composer install`.
+
+### Work completed
+- [x] Installed `laravel/pennant` (approved); published config and `features` table migration
+- [x] `App\Features\M0Foundations` flag + `config/features.php`: on for everyone via `FEATURE_M0_ENABLED`, otherwise only for `FEATURE_EARLY_ACCESS_EMAILS`
+- [x] Tags decision: **dropped**. New migration `drop_tags_tables` drops `column_tags`, `board_tags`, `tags` (down() recreates the final schema). Removed `Tag` model, `TagFactory`, and the `tags()` relations on User, Workspace, Board, Column. Old create migrations are kept so existing databases migrate forward cleanly.
+- [x] Removed the tag tests (`TagsLabelsTest` → `LabelsTest`, and the tag case in `WorkspacesTest`)
+- [x] Deleted the unused `livewire/boards/create-board-form.blade.php` placeholder
+- [x] Tests: `tests/Feature/M0/FeatureFlagTest.php` (off by default, early access only, on for all)
+
+### Notes
+- Full suite: 312 passed, 1 failed. The failure (`ErrorTrackingTest`) is environmental: the local `.env` sets a Sentry DSN and the test expects none.
+- `composer audit` reports 22 advisories across 6 packages (pre-existing); the spec's CI gate requires a clean audit.

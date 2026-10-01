@@ -28,11 +28,6 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this->hasMany(Board::class)->orderBy('position');
     }
 
-    public function tags(): HasMany
-    {
-        return $this->hasMany(Tag::class);
-    }
-
     public function workspaces(): BelongsToMany
     {
         return $this->belongsToMany(Workspace::class, 'workspace_user')
