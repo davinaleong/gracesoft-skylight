@@ -30,6 +30,7 @@ Roadmap features ship behind Laravel Pennant feature flags (see §2.15).
 - API tokens: create a named token (shown once) as **full API access** or **read-only bot**, list with last-used time, revoke (takes effect on the next request)
 - Email notification preferences: switch due-today and overdue reminders on or off (M0 flag)
 - Export my data (M0 flag): a zip with `skylight-export.json` (account, memberships, token names, full content of boards in owned workspaces including attachment metadata, and the user's own comments/notes elsewhere) and `cards.csv`. Over 500 cards, the export is queued and emailed as a signed link valid for 24 hours that only works for the signed-in owner; archives are pruned hourly once expired
+- Delete account (M0 flag): requires the password plus a 2FA or recovery code when 2FA is on (5 attempts/min); blocked while an owned workspace has other members or a paid plan. Deletion is scheduled 7 days out with a "Keep my account" email link (signed, works signed out) and a cancel button on the profile. After the grace period an hourly job permanently removes the user, the workspaces they own (boards, files), their comments/notes and uploads elsewhere, tokens, sessions, notifications, pending invites, and flag values; boards they created in other workspaces are handed to that workspace's owner, and their remaining activity log entries are anonymised
 - New users get a personal workspace and a seeded demo board
 
 ### 2.2 Workspaces and Teams
@@ -160,6 +161,7 @@ Roadmap features ship behind Laravel Pennant feature flags (see §2.15).
 | GET | `/boards/{board}/export?format=csv` | Verified, workspace member | JSON (default) or CSV export |
 | GET | `/team`, `/team/{workspace}` | Verified, member | Team management |
 | GET | `/billing`, `/webhooks`, `/integrations` | Verified | Workspace settings |
+| GET | `/account/deletion/cancel/{user}` | Signed URL, 6/min | Cancel a scheduled account deletion |
 | GET | `/invites/{token}` | Public | Invite landing page |
 | POST | `/invites/{token}/accept` | Logged in | Accept invite |
 | GET | `/view/{token}` | Public, 30/min | Client portal viewer |
@@ -189,14 +191,15 @@ Fortify provides login, registration, logout, password reset, password confirmat
 | `app:test-mail` | Send a sample notification (`--type`, `--to`) |
 | `app:send-card-due-reminders` | Send due-today and overdue reminders |
 | `app:prune-account-exports` | Delete queued export archives after their link expires |
+| `app:purge-deleted-accounts` | Permanently delete accounts whose grace period ended (skips any still blocked) |
 
-Scheduled: export pruning hourly; reminders 08:00; `backup:run` 01:00, `backup:clean` 01:30, `backup:monitor` 02:00.
+Scheduled: export pruning and account purging hourly; reminders 08:00; `backup:run` 01:00, `backup:clean` 01:30, `backup:monitor` 02:00.
 
 ## 5. Data Model
 
 | Entity | Purpose |
 | --- | --- |
-| User | Account, 2FA, OAuth ids, avatar, notification preferences, API tokens |
+| User | Account, 2FA, OAuth ids, avatar, notification preferences, API tokens, `deletion_scheduled_at` |
 | Workspace | Team/tenant with plan, Stripe customer, Slack settings |
 | `workspace_user` | Membership with role |
 | WorkspaceInvite | Hashed invite token, role, expiry |
@@ -216,7 +219,7 @@ Scheduled: export pruning hourly; reminders 08:00; `backup:run` 01:00, `backup:c
 
 - `Actions/Fortify`: `CreateNewUser::create`, `PasswordValidationRules::passwordRules`, `ResetUserPassword::reset`, `UpdateUserPassword::update`, `UpdateUserProfileInformation::update`, `updateVerifiedUser`
 - `Concerns/AuthorizesWorkspaceEditing`: `authorizeEdit`, `authorizeView`, `workspaceFor`
-- `Console/Commands`: `CreateUser::handle`, `askValid`; `PruneAccountExports::handle`; `SendCardDueReminders::handle`; `TestMail::handle`, `buildNotification`, `fakeCards`
+- `Console/Commands`: `CreateUser::handle`, `askValid`; `PruneAccountExports::handle`; `PurgeDeletedAccounts::handle`; `SendCardDueReminders::handle`; `TestMail::handle`, `buildNotification`, `fakeCards`
 - `Features/M0Foundations::resolve(?User $user): bool`
 
 ### 6.2 Controllers and Resources
@@ -236,6 +239,7 @@ Scheduled: export pruning hourly; reminders 08:00; `backup:run` 01:00, `backup:c
 
 - `Jobs/ExportAccountData::handle`, `Jobs/SendSlackMessage::handle`, `Jobs/SendWebhookRequest::handle`
 - `AccountExporter`: `shouldQueue`, `toArray`, `cardRows`, `writeArchive`, `toCsv`, `boardToArray`, `attachmentsToArray`, `ownedWorkspaces`, `ownedCards`
+- `AccountDeletion`: `GRACE_PERIOD_DAYS`, `blockers`, `schedule`, `cancel`, `due`, `purge`, `storedFilePaths`, `attachmentsOnOwnContributions`, `attachmentsOnCards`
 - `ActivityLogger`: `log`, `hashIp`, `diff`
 - `BoardExporter`: `toArray`, `toJson`, `toCsvRows`
 - `BoardTemplates`: `isValid`, `apply`
@@ -263,7 +267,7 @@ Scheduled: export pruning hourly; reminders 08:00; `backup:run` 01:00, `backup:c
 
 ### 6.5 Notifications
 
-`Account/AccountExportReady` (`downloadUrl`), `Auth/NewIpLogin`, `Auth/PasswordChanged`, `Auth/RecoveryCodeUsed`, `Auth/SuspiciousLogin`, `Auth/Welcome`, `Board/ShareLinkCreated`, `Board/ShareLinkRevoked`, `Card/CardDue`, `Card/CommentMention`, `Workspace/WorkspaceInvitation` (each `via`, `toMail`, and `toArray` where shown in the bell)
+`Account/AccountDeletionScheduled` (`cancelUrl`), `Account/AccountExportReady` (`downloadUrl`), `Auth/NewIpLogin`, `Auth/PasswordChanged`, `Auth/RecoveryCodeUsed`, `Auth/SuspiciousLogin`, `Auth/Welcome`, `Board/ShareLinkCreated`, `Board/ShareLinkRevoked`, `Card/CardDue`, `Card/CommentMention`, `Workspace/WorkspaceInvitation` (each `via`, `toMail`, and `toArray` where shown in the bell)
 
 ### 6.6 Observers and Providers
 
@@ -281,6 +285,7 @@ Scheduled: export pruning hourly; reminders 08:00; `backup:run` 01:00, `backup:c
 - **notifications/bell:** `notifications`, `unreadCount`, `markAsRead`, `markAllAsRead`
 - **onboarding/checklist:** `steps`, `isComplete`, `shouldShow`, `dismiss`
 - **profile/notification-preferences:** `mount`, `save`
+- **profile/delete-account:** `blockers`, `requiresTwoFactor`, `scheduleDeletion`, `cancelDeletion`, `verifyTwoFactor`
 - **profile/api-tokens:** `tokens`, `create`, `revoke`, `dismissToken`
 - **profile/avatar:** `avatarUrl`, `upload`, `remove`
 - **search/global:** `results`

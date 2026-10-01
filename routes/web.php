@@ -7,7 +7,9 @@ use App\Http\Controllers\WorkspaceInviteController;
 use App\Models\Board;
 use App\Models\BoardShareLink;
 use App\Models\ShareLinkAccess;
+use App\Models\User;
 use App\Models\Workspace;
+use App\Services\AccountDeletion;
 use App\Services\ActivityLogger;
 use App\Services\SystemStatusService;
 use Illuminate\Support\Facades\Request;
@@ -93,6 +95,15 @@ Route::get('/invites/{token}', [WorkspaceInviteController::class, 'show'])->name
 Route::post('/invites/{token}/accept', [WorkspaceInviteController::class, 'accept'])
     ->middleware(['auth'])
     ->name('invites.accept');
+
+// Signed "Keep my account" link from the deletion email; works signed out.
+Route::get('/account/deletion/cancel/{user}', function (User $user) {
+    if ($user->deletion_scheduled_at !== null) {
+        AccountDeletion::cancel($user);
+    }
+
+    return redirect()->route(auth()->check() ? 'profile' : 'login')->with('status', 'account-deletion-cancelled');
+})->middleware(['signed', 'throttle:6,1'])->name('account.deletion.cancel');
 
 // Public read-only board viewer — rate-limited, noindex
 Route::middleware(['throttle:viewer'])->group(function () {

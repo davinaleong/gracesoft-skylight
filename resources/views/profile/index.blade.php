@@ -146,6 +146,17 @@
         {{-- API tokens --}}
         @livewire('profile.api-tokens')
 
+        {{-- Delete account --}}
+        @feature(\App\Features\M0Foundations::class)
+            @if (session('status') === 'account-deletion-cancelled')
+                <div class="rounded-lg bg-green-50 dark:bg-green-900/20 p-3 text-sm text-green-700 dark:text-green-400">
+                    Account deletion cancelled. Your account is safe.
+                </div>
+            @endif
+
+            @livewire('profile.delete-account')
+        @endfeature
+
         <p class="text-center text-sm text-gray-500 dark:text-gray-400">
             Have feedback or found a bug? <a href="{{ route('feedback') }}" class="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">Let us know</a>.
         </p>

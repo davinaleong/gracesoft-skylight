@@ -152,3 +152,19 @@ Branch: `m0-foundations`. Spec: `competitive-edge-milestones.md` / `competitive-
 
 ### Notes
 - Fixed a flaky assertion during this iteration: `ChecklistItemFactory` assigns a random `position`, and items are ordered by position, so test fixtures must pin positions.
+
+## 2026-10-01 — Competitive Edge M0 (5/6): Account deletion with a 7-day grace period
+
+### Work completed
+- [x] Migration: `users.deletion_scheduled_at` (indexed)
+- [x] `App\Services\AccountDeletion`: `blockers`, `schedule`, `cancel`, `due`, `purge`
+- [x] Volt component `profile/delete-account` (M0 flag): password + TOTP or recovery code (recovery codes are consumed and trigger the existing security email); 5 failed attempts per minute per user; shows the scheduled date with "Keep my account"
+- [x] Blockers (design decision): deletion is refused while an owned workspace has other members (there's no ownership transfer yet; deleting would destroy the team's boards) or is on a paid plan (to avoid orphaning a Stripe subscription). The purge job re-checks and skips users who became blocked during the grace period.
+- [x] `AccountDeletionScheduledNotification` with a signed "Keep my account" link valid until the deletion date (works signed out)
+- [x] `app:purge-deleted-accounts` (hourly, one server): after the grace period removes the user, owned workspaces (cascading boards, share links, webhooks), their comments/notes elsewhere, every stored file (own uploads anywhere, all uploads on owned cards, files on their comments/notes, avatar), tokens, sessions, notifications, pending invites to their email, Pennant values, and queued exports
+- [x] Data-loss fix in the purge: `boards.user_id` cascades on delete, so boards the user created in **other** workspaces are reassigned to that workspace's owner first
+- [x] Activity log: entries about deleted boards/cards are removed; the user's other entries are anonymised (`user_id`, `ip_hash`, `properties` cleared, so e.g. failed-login emails don't survive)
+- [x] Tests (`tests/Feature/M0/AccountDeletionTest.php`, 10 cases): schedule + email, wrong password + throttle, TOTP required/invalid/valid, recovery code consumed, blockers, flag off, cancel from profile and from the signed link (unsigned → 403), no purge before 7 days, full purge leaves no rows/files and keeps the teammate's board, skip when newly blocked
+
+### Notes
+- Found while checking billing for the blockers: Cashier is on `Workspace` but `subscriptions` has `user_id`, while Cashier queries `workspace_id`, so subscription lookups would fail. Out of M0 scope; flagged as a separate task.

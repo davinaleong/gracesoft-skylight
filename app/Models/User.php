@@ -55,6 +55,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
             'email_verified_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
             'onboarding_dismissed_at' => 'datetime',
+            'deletion_scheduled_at' => 'datetime',
             'password' => 'hashed',
             'notification_preferences' => 'array',
         ];

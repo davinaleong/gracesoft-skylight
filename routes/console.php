@@ -14,6 +14,9 @@ Schedule::command('app:send-card-due-reminders')->dailyAt('08:00');
 // M0: delete queued account exports once their emailed link has expired
 Schedule::command('app:prune-account-exports')->hourly();
 
+// M0: permanently delete accounts whose 7-day deletion grace period has ended
+Schedule::command('app:purge-deleted-accounts')->hourly()->onOneServer();
+
 // Milestone 8: nightly backup (database + storage/app + .env), then prune
 // per config/backup.php's retention strategy, then verify what's left is
 // actually healthy (age/size) -- three separate steps so a cleanup or
