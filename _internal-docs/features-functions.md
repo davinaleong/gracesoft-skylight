@@ -27,7 +27,7 @@ Roadmap features ship behind Laravel Pennant feature flags (see §2.15).
 - Forgot password / reset password; confirm password before sensitive actions
 - Profile page: name, email, password, avatar upload/remove
 - Two-factor authentication (TOTP): enable, confirm, disable, view and regenerate recovery codes; log in with a code or a recovery code
-- API tokens: create a named token (shown once), list, revoke
+- API tokens: create a named token (shown once) as **full API access** or **read-only bot**, list with last-used time, revoke (takes effect on the next request)
 - Email notification preferences: switch due-today and overdue reminders on or off (M0 flag)
 - New users get a personal workspace and a seeded demo board
 
@@ -107,8 +107,8 @@ Roadmap features ship behind Laravel Pennant feature flags (see §2.15).
 
 ### 2.11 Integrations
 
-- **REST API** (`/api/v1`, Sanctum tokens, 60/min): boards, columns, cards, comments
-- **Bot API** (`/api/bot`): read-only due cards and board summaries for the GraceSoft Assistant Telegram bot
+- **REST API** (`/api/v1`, full-access Sanctum tokens only, 60/min): boards, columns, cards, comments
+- **Bot API** (`/api/bot`, read-only bot or full tokens, 60/min per token): due cards and board summaries for the GraceSoft Assistant Telegram bot
 - **Outgoing webhooks** per workspace: `card.created`, `card.moved`, `card.completed`, `card.deleted`; signed payloads, delivery log, enable/disable
 - **Slack:** incoming-webhook notifications for card events, with a test message
 - Zapier / Make.com documentation page
@@ -134,6 +134,7 @@ Roadmap features ship behind Laravel Pennant feature flags (see §2.15).
 | Public viewer | 30/min per IP |
 | Status page | 30/min per IP |
 | REST API | 60/min per user |
+| Bot API | 60/min per token (429 with `Retry-After`) |
 
 ### 2.15 Feature Flags
 
@@ -249,7 +250,7 @@ Scheduled: reminders 08:00; `backup:run` 01:00, `backup:clean` 01:30, `backup:mo
 - **Column:** `board`, `cards`
 - **Comment:** `card`, `user`, `attachments`; **Label:** `board`, `cards`; **MarkdownNote:** `card`, `user`, `attachments`
 - **ShareLinkAccess:** `shareLink`
-- **User:** `NOTIFICATION_PREFERENCES`, `boards`, `workspaces`, `currentWorkspace`, `wantsNotification`, `avatarUrl`, `mentionHandle`
+- **User:** `API_TOKEN_TYPES`, `NOTIFICATION_PREFERENCES`, `boards`, `workspaces`, `currentWorkspace`, `wantsNotification`, `avatarUrl`, `mentionHandle`
 - **Webhook:** `workspace`, `createdBy`, `deliveries`, `generateSecret`, `subscribesTo`, `sign`; **WebhookDelivery:** `webhook`
 - **Workspace:** `createForUser`, `owner`, `users`, `hasMember`, `roleOf`, `isOwner`, `isViewer`, `canManageMembers`, `canEditContent`, `canChangeMember`, `boards`, `invites`, `webhooks`, `slackIsConnected`, `slackNotifiesOn`, `stripeEmail`, `planLimits`
 - **WorkspaceInvite:** `workspace`, `inviter`, `isAccepted`, `isExpired`, `isPending`, `accept`, `generateToken`, `findByToken`
@@ -284,7 +285,7 @@ Scheduled: reminders 08:00; `backup:run` 01:00, `backup:clean` 01:30, `backup:mo
 
 ## 7. Known Gaps
 
-- `/api/bot/*` has no rate limiter, and the bot API scopes by board creator (`user_id`) rather than workspace membership (M0 / M1)
+- The bot API scopes by board creator (`user_id`) rather than workspace membership (M1)
 - The public viewer only shows card-level attachments, not those on checklists, comments, or notes (M4)
 - `composer audit` reports 22 advisories across 6 packages
 - Abandoned `livewire-tmp/` uploads on S3 are never cleaned up (needs an S3 lifecycle rule)

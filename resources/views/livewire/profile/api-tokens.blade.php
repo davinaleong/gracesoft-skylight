@@ -1,10 +1,14 @@
 <?php
 
+use App\Models\User;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 
 new class extends Component {
     public string $tokenName = '';
+
+    public string $tokenType = 'full';
 
     public ?string $plainTextToken = null;
 
@@ -20,12 +24,13 @@ new class extends Component {
     {
         $this->validate([
             'tokenName' => ['required', 'string', 'max:100'],
+            'tokenType' => ['required', Rule::in(array_keys(User::API_TOKEN_TYPES))],
         ]);
 
-        $token = auth()->user()->createToken($this->tokenName);
+        $token = auth()->user()->createToken($this->tokenName, User::API_TOKEN_TYPES[$this->tokenType]['abilities']);
 
         $this->plainTextToken = $token->plainTextToken;
-        $this->reset('tokenName', 'showCreateForm');
+        $this->reset('tokenName', 'tokenType', 'showCreateForm');
         unset($this->tokens);
     }
 
@@ -55,7 +60,7 @@ new class extends Component {
     </div>
 
     <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-        Use API tokens to authenticate requests to the public REST API from scripts, Zapier, or your own integrations. Send them as <code class="text-xs bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5">Authorization: Bearer &lt;token&gt;</code>.
+        Use API tokens to authenticate requests to the public REST API from scripts, Zapier, or your own integrations. Give the GraceSoft Assistant bot a read-only bot token. Send them as <code class="text-xs bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5">Authorization: Bearer &lt;token&gt;</code>.
     </p>
 
     @if ($plainTextToken)
@@ -67,8 +72,8 @@ new class extends Component {
     @endif
 
     @if ($showCreateForm)
-        <form wire:submit="create" class="mb-4 flex items-end gap-3">
-            <div class="flex-1">
+        <form wire:submit="create" class="mb-4 flex flex-wrap items-end gap-3">
+            <div class="flex-1 min-w-48">
                 <label for="tokenName" class="block text-sm font-medium mb-1.5">Token name</label>
                 <input
                     id="tokenName"
@@ -80,6 +85,18 @@ new class extends Component {
                 @error('tokenName')
                     <p class="mt-1.5 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                 @enderror
+            </div>
+            <div>
+                <label for="tokenType" class="block text-sm font-medium mb-1.5">Access</label>
+                <select
+                    id="tokenType"
+                    wire:model="tokenType"
+                    class="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3.5 py-2.5 text-sm shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                    @foreach (\App\Models\User::API_TOKEN_TYPES as $type => $definition)
+                        <option value="{{ $type }}">{{ $definition['label'] }}</option>
+                    @endforeach
+                </select>
             </div>
             <button
                 type="submit"
@@ -100,7 +117,12 @@ new class extends Component {
             @foreach ($this->tokens as $token)
                 <li class="flex items-center justify-between py-3">
                     <div>
-                        <p class="text-sm font-medium">{{ $token->name }}</p>
+                        <p class="text-sm font-medium">
+                            {{ $token->name }}
+                            @unless (in_array('*', $token->abilities, true))
+                                <span class="ml-1.5 rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-normal text-gray-600 dark:text-gray-400">Read-only bot</span>
+                            @endunless
+                        </p>
                         <p class="text-xs text-gray-400 dark:text-gray-500">
                             Created {{ $token->created_at->diffForHumans() }}
                             @if ($token->last_used_at)

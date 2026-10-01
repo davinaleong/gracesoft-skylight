@@ -61,6 +61,23 @@ class User extends Authenticatable implements MustVerifyEmailContract
     }
 
     /**
+     * API token types offered on the profile page. Bot tokens can only read
+     * the /api/bot endpoints; full tokens can use the whole REST API.
+     *
+     * @var array<string, array{label: string, abilities: array<int, string>}>
+     */
+    public const API_TOKEN_TYPES = [
+        'full' => [
+            'label' => 'Full API access',
+            'abilities' => ['*'],
+        ],
+        'bot' => [
+            'label' => 'Read-only bot',
+            'abilities' => ['bot:read'],
+        ],
+    ];
+
+    /**
      * Email notification types the user can switch on or off, keyed by the
      * preference stored in notification_preferences.
      *

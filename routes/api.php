@@ -13,7 +13,8 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->name('api.v1.')->group(function () {
+// Read-only bot tokens lack the '*' ability, so they're refused here.
+Route::middleware(['auth:sanctum', 'abilities:*', 'throttle:api'])->prefix('v1')->name('api.v1.')->group(function () {
     Route::apiResource('boards', BoardController::class);
 
     Route::get('boards/{board}/columns', [ColumnController::class, 'index'])->name('boards.columns.index');
@@ -32,7 +33,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->name('api.v1.
     Route::delete('comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 });
 
-Route::prefix('bot')->middleware('auth:sanctum')->group(function (): void {
+Route::prefix('bot')->middleware(['auth:sanctum', 'ability:bot:read', 'throttle:bot'])->group(function (): void {
     Route::get('/cards/due', [CardsController::class, 'due']);
     Route::get('/boards/summary', [BoardsController::class, 'summary']);
 });

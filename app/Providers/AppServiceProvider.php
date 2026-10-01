@@ -45,6 +45,12 @@ class AppServiceProvider extends ServiceProvider
         // Rate-limit for the public REST API: 60 req/min per token (falls back to IP for safety)
         RateLimiter::for('api', fn ($request) => Limit::perMinute(60)->by($request->user()?->id ?: Request::ip()));
 
+        // Rate-limit for the read-only bot API: 60 req/min per token, so one
+        // misbehaving bot token can't exhaust the owner's other tokens.
+        RateLimiter::for('bot', fn ($request) => Limit::perMinute(60)->by(
+            'bot:'.($request->user()?->currentAccessToken()?->getKey() ?? Request::ip())
+        ));
+
         // Rate-limit for the public status page: 30 req/min per IP -- generous
         // enough for real uptime monitors (which typically poll every 1-5 min)
         // while protecting the cache/storage read-write checks from abuse.

@@ -127,3 +127,14 @@ Branch: `m0-foundations`. Spec: `competitive-edge-milestones.md` / `competitive-
 
 ### Notes
 - Security emails (new-IP login, password changed, recovery code used, suspicious logins) are intentionally not switchable.
+
+## 2026-10-01 — Competitive Edge M0 (3/6): Bot tokens and bot rate limiter
+
+### Work completed
+- [x] The existing API tokens panel already covered create-once / list with last-used / revoke. Added a token **type**: "Full API access" (`*`) or "Read-only bot" (`bot:read`), defined in `User::API_TOKEN_TYPES`; bot tokens show a badge in the list
+- [x] Registered Sanctum's `abilities` / `ability` middleware aliases. `/api/v1` now requires `abilities:*` (bot tokens get `403`); `/api/bot` requires `ability:bot:read` (full tokens still pass). Existing tokens were created with `*`, so nothing already issued breaks
+- [x] New `bot` rate limiter: 60/min keyed per token id; `/api/bot` uses `throttle:bot`, which returns `429` with `Retry-After`
+- [x] Tests (`tests/Feature/M0/BotTokensTest.php`): bot token shown once and listed, unknown type rejected, bot token can't reach REST API, full tokens still work, revoked token gets `401` on the next request, 429 + `Retry-After` after 60 requests and limits are per token
+
+### Notes
+- Within a single test, Laravel caches the resolved Sanctum user between requests; tests that switch or revoke tokens call `auth()->forgetGuards()` first. Production requests are unaffected.
