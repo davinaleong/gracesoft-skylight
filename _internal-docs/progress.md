@@ -117,3 +117,13 @@ Branch: `m0-foundations`. Spec: `competitive-edge-milestones.md` / `competitive-
 ### Notes
 - Full suite: 312 passed, 1 failed. The failure (`ErrorTrackingTest`) is environmental: the local `.env` sets a Sentry DSN and the test expects none.
 - `composer audit` reports 22 advisories across 6 packages (pre-existing); the spec's CI gate requires a clean audit.
+
+## 2026-10-01 — Competitive Edge M0 (2/6): Notification preferences screen
+
+### Work completed
+- [x] `User::NOTIFICATION_PREFERENCES` lists the switchable email types (`due_today`, `overdue`) with labels; new types are added there and appear on the screen automatically
+- [x] New Volt component `profile/notification-preferences` on the profile page, shown with `@feature(M0Foundations)`; `save()` also checks the flag server-side and writes only known keys
+- [x] Tests (`tests/Feature/M0/NotificationPreferencesTest.php`): flag gating on the page and on save, defaults on, unknown keys ignored, and the 08:00 reminder job sends/skips each type per preference (`travelTo` 08:00)
+
+### Notes
+- Security emails (new-IP login, password changed, recovery code used, suspicious logins) are intentionally not switchable.

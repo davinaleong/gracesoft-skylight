@@ -28,6 +28,7 @@ Roadmap features ship behind Laravel Pennant feature flags (see §2.15).
 - Profile page: name, email, password, avatar upload/remove
 - Two-factor authentication (TOTP): enable, confirm, disable, view and regenerate recovery codes; log in with a code or a recovery code
 - API tokens: create a named token (shown once), list, revoke
+- Email notification preferences: switch due-today and overdue reminders on or off (M0 flag)
 - New users get a personal workspace and a seeded demo board
 
 ### 2.2 Workspaces and Teams
@@ -248,7 +249,7 @@ Scheduled: reminders 08:00; `backup:run` 01:00, `backup:clean` 01:30, `backup:mo
 - **Column:** `board`, `cards`
 - **Comment:** `card`, `user`, `attachments`; **Label:** `board`, `cards`; **MarkdownNote:** `card`, `user`, `attachments`
 - **ShareLinkAccess:** `shareLink`
-- **User:** `boards`, `workspaces`, `currentWorkspace`, `wantsNotification`, `avatarUrl`, `mentionHandle`
+- **User:** `NOTIFICATION_PREFERENCES`, `boards`, `workspaces`, `currentWorkspace`, `wantsNotification`, `avatarUrl`, `mentionHandle`
 - **Webhook:** `workspace`, `createdBy`, `deliveries`, `generateSecret`, `subscribesTo`, `sign`; **WebhookDelivery:** `webhook`
 - **Workspace:** `createForUser`, `owner`, `users`, `hasMember`, `roleOf`, `isOwner`, `isViewer`, `canManageMembers`, `canEditContent`, `canChangeMember`, `boards`, `invites`, `webhooks`, `slackIsConnected`, `slackNotifiesOn`, `stripeEmail`, `planLimits`
 - **WorkspaceInvite:** `workspace`, `inviter`, `isAccepted`, `isExpired`, `isPending`, `accept`, `generateToken`, `findByToken`
@@ -272,6 +273,7 @@ Scheduled: reminders 08:00; `backup:run` 01:00, `backup:clean` 01:30, `backup:mo
 - **cards/detail:** `mount`, `checklists`, `saveDates`, `createChecklist`, `deleteChecklist`, `createItem`, `toggleItem`, `deleteItem`, `comments`, `workspaceMembers`, `addComment`, `notifyMentions`, `renderCommentBody`, `deleteComment`, `attachments`, `markdownNotes`, `uploadFile`, `addLink`, `deleteAttachment`, `openAttachmentForm`, `closeAttachmentForm`, `uploadItemFile`, `addItemLink`, `deleteItemAttachment`, `resolveAttachTarget`, `fileUploadRules`, `resolveAttachmentType`, `saveNote`, `editNote`, `deleteNote`
 - **notifications/bell:** `notifications`, `unreadCount`, `markAsRead`, `markAllAsRead`
 - **onboarding/checklist:** `steps`, `isComplete`, `shouldShow`, `dismiss`
+- **profile/notification-preferences:** `mount`, `save`
 - **profile/api-tokens:** `tokens`, `create`, `revoke`, `dismissToken`
 - **profile/avatar:** `avatarUrl`, `upload`, `remove`
 - **search/global:** `results`
@@ -282,7 +284,6 @@ Scheduled: reminders 08:00; `backup:run` 01:00, `backup:clean` 01:30, `backup:mo
 
 ## 7. Known Gaps
 
-- No screen to change `due_today` / `overdue` notification preferences (M0)
 - `/api/bot/*` has no rate limiter, and the bot API scopes by board creator (`user_id`) rather than workspace membership (M0 / M1)
 - The public viewer only shows card-level attachments, not those on checklists, comments, or notes (M4)
 - `composer audit` reports 22 advisories across 6 packages

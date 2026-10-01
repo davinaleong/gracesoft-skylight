@@ -114,6 +114,11 @@
         {{-- Two-factor authentication --}}
         @include('profile.two-factor-authentication')
 
+        {{-- Email notification preferences --}}
+        @feature(\App\Features\M0Foundations::class)
+            @livewire('profile.notification-preferences')
+        @endfeature
+
         {{-- API tokens --}}
         @livewire('profile.api-tokens')
 

@@ -61,6 +61,23 @@ class User extends Authenticatable implements MustVerifyEmailContract
     }
 
     /**
+     * Email notification types the user can switch on or off, keyed by the
+     * preference stored in notification_preferences.
+     *
+     * @var array<string, array{label: string, description: string}>
+     */
+    public const NOTIFICATION_PREFERENCES = [
+        'due_today' => [
+            'label' => 'Cards due today',
+            'description' => 'A morning email listing cards due today.',
+        ],
+        'overdue' => [
+            'label' => 'Overdue cards',
+            'description' => 'A morning email listing cards past their due date.',
+        ],
+    ];
+
+    /**
      * Check whether the user has a specific P2 notification preference enabled.
      * Defaults to true if the preference has not been explicitly set.
      */

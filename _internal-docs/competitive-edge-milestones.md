@@ -32,7 +32,7 @@ Not on this roadmap for now: Gantt charts, a full automation builder, native mob
 
 ### Scope
 
-- [ ] **Notification preferences screen** on the profile page for `due_today` and `overdue`, plus every new notification type added later
+- [x] **Notification preferences screen** on the profile page for `due_today` and `overdue`, plus every new notification type added later
 - [ ] **Bot token management UI:** create a named token (shown once), list tokens with last-used time, and revoke a token
 - [ ] **Bot API rate limiter:** a dedicated `bot` limiter (e.g. 60/min per token), with `429` responses including `Retry-After`
 - [x] **Tags decision:** either ship tags in the UI (filter boards by tag) or drop the model, pivots, and migrations
